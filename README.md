@@ -47,8 +47,8 @@ entries:
 
 ## 在线访问
 
-推送 `master` 后，GitHub Actions 自动部署 GitHub Pages：
+推送 **learningWarehouse-public 子仓库** 的 `master` 后，GitHub Actions 自动部署 GitHub Pages（推主仓库 Gitee/GitHub **不会**触发此 workflow）。
+
+首次使用前请在 GitHub 仓库 **Settings → Pages → Build and deployment → Source** 设为 **GitHub Actions**。
 
 https://carrieryu.github.io/learningWarehouse-public/
-
-首次使用前请在 GitHub 仓库 Settings → Pages 中将 Source 设为 **GitHub Actions**。
