@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 新技术与 Agent 生态思维导图</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
+        body {
+            font-family: 'Inter', 'Noto Sans SC', sans-serif;
+            background-color: #0b0f19;
+            color: #f3f4f6;
+        }
+        .glow-protocol { box-shadow: 0 0 20px rgba(59, 130, 246, 0.15); }
+        .glow-product { box-shadow: 0 0 20px rgba(168, 85, 247, 0.15); }
+        .glow-coding { box-shadow: 0 0 20px rgba(16, 185, 129, 0.15); }
+        .glow-ability { box-shadow: 0 0 20px rgba(245, 158, 11, 0.15); }
+        
+        /* 连线动画效果 */
+        @keyframes dash {
+            to {
+                stroke-dashoffset: -40;
+            }
+        }
+        .flow-line {
+            stroke-dasharray: 8, 4;
+            animation: dash 2s linear infinite;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between overflow-x-hidden">
+
+    <!-- 头部导航 -->
+    <header class="border-b border-gray-800 bg-gray-900/50 backdrop-blur-md sticky top-0 z-50 px-6 py-4">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="p-2.5 bg-indigo-600/20 text-indigo-400 rounded-xl border border-indigo-500/30">
+                    <i data-lucide="network" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight bg-gradient-to-r from-white via-gray-100 to-indigo-300 bg-clip-text text-transparent">
+                        AI 新技术与 Agent 生态知识图谱
+                    </h1>
+                    <p class="text-xs text-gray-400 mt-0.5">模块化拆解 · 关系型认知 · 核心概念速览</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <button id="btn-collapse" class="flex items-center gap-2 px-3.5 py-1.5 text-xs font-medium rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 transition border border-gray-700">
+                    <i data-lucide="minimize-2" class="w-3.5 h-3.5"></i>
+                    全部收起
+                </button>
+                <button id="btn-expand" class="flex items-center gap-2 px-3.5 py-1.5 text-xs font-medium rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition">
+                    <i data-lucide="maximize-2" class="w-3.5 h-3.5"></i>
+                    全部展开
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主体内容 -->
+    <main class="max-w-7xl w-full mx-auto px-4 py-8 flex-grow">
+        <!-- 面试视角的层级解读提示 -->
+        <div class="mb-8 p-4 rounded-xl bg-indigo-950/30 border border-indigo-500/20 text-sm text-indigo-200 flex gap-3 items-start">
+            <i data-lucide="info" class="w-5 h-5 text-indigo-400 shrink-0 mt-0.5"></i>
+            <div>
+                <span class="font-bold text-white">架构化认知提示：</span>
+                这十二个名词并非孤立存在。
+                <strong class="text-blue-400">“协议”</strong>（MCP/A2A）是底层的连接标准；
+                基于这些标准和封装好的<strong class="text-amber-400">“能力组织方式”</strong>（Skills/Workflow），
+                诞生了多样化的<strong class="text-purple-400">“Agent 产品”</strong>（Claude Code/Manus 等）；
+                而这些工具和生态反过来塑造了人类在 AI 时代的<strong class="text-emerald-400">“AI 编程与工作方式”</strong>（Vibe Coding）。
+            </div>
+        </div>
+
+        <!-- 思维导图网格布局 -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            
+            <!-- 分类 1: 协议 -->
+            <div class="bg-gray-900/40 rounded-2xl p-6 border border-blue-500/10 glow-protocol flex flex-col h-full">
+                <div class="flex justify-between items-center border-b border-gray-800 pb-4 mb-5">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 bg-blue-500/10 text-blue-400 rounded-lg border border-blue-500/20">
+                            <i data-lucide="git-fork" class="w-5 h-5"></i>
+                        </div>
+                        <div>
+                            <h2 class="font-bold text-lg text-white">01. 协议 (Protocol)</h2>
+                            <p class="text-xs text-gray-400">连接的基石，解决“如何打通”与“如何协同”的问题</p>
+                        </div>
+                    </div>
+                    <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">底座标准</span>
+                </div>
+
+                <div class="space-y-4 flex-grow">
+                    <!-- MCP -->
+                    <div class="concept-card bg-gray-900/60 border border-gray-800 hover:border-blue-500/40 rounded-xl p-4 transition duration-300">
+                        <div class="flex justify-between items-start cursor-pointer" onclick="toggleDetails('detail-mcp')">
+                            <div class="flex items-center gap-2">
+                                <span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
+                                <h3 class="font-bold text-white text-base">MCP <span class="text-xs font-normal text-gray-400">(Model Context Protocol)</span></h3>
+                            </div>
+                            <i data-lucide="chevron-down" class="w-4 h-4 text-gray-500 transition-transform duration-200" id="icon-detail-mcp"></i>
+                        </div>
+                        <div id="detail-mcp" class="mt-3 text-sm text-gray-300 border-t border-gray-800/60 pt-3 space-y-2">
+                            <p><strong class="text-blue-400">大模型连接外部工具和数据的标准协议。</strong>你可以把它理解为 <span class="bg-blue-500/10 text-blue-300 px-1 py-0.5 rounded text-xs font-mono">AI 世界的“通用插座”</span>。</p>
+                            <p class="text-xs text-gray-400 leading-relaxed">
+                                <strong>核心解决：</strong>以往每个模型、每个软件都要写一套私有的接口去连接外部文件、数据库或内部系统。通过 MCP，各大模型可实现“即插即用”式连接，消除定制开发的繁琐，极大地丰富了模型获取上下文的能力。
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- A2A -->
+                    <div class="concept-card bg-gray-900/60 border border-gray-800 hover:border-blue-500/40 rounded-xl p-4 transition duration-300">
+                        <div class="flex justify-between items-start cursor-pointer" onclick="toggleDetails('detail-a2a')">
+                            <div class="flex items-center gap-2">
+                                <span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
+                                <h3 class="font-bold text-white text-base">A2A <span class="text-xs font-normal text-gray-400">(Agent-to-Agent)</span></h3>
+                            </div>
+                            <i data-lucide="chevron-down" class="w-4 h-4 text-gray-500 transition-transform duration-200" id="icon-detail-a2a"></i>
+                        </div>
+                        <div id="detail-a2a" class="mt-3 text-sm text-gray-300 border-t border-gray-800/60 pt-3 space-y-2">
+                            <p><strong class="text-blue-400">Agent 与 Agent 之间通信与协作的协议。</strong>如果说 MCP 解决的是“怎么连接工具”，那 A2A 解决的就是<span class="bg-blue-500/10 text-blue-300 px-1 py-0.5 rounded text-xs font-mono">“Agent 之间如何沟通和分工”</span>。</p>
+                            <p class="text-xs text-gray-400 leading-relaxed">
+                                <strong>核心解决：</strong>在多 Agent 系统（Multi-Agent）中，需要一套公共标准的语意和协作格式，使擅长搜索的 Agent 与擅长报表、写代码的 Agent 能无缝咬合、高效流转，从而交付超出单体 Agent 能力极限的复杂成果。
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 分类 2: Agent 产品 -->
+            <div class="bg-gray-900/40 rounded-2xl p-6 border border-purple-500/10 glow-product flex flex-col h-full">
+                <div class="flex justify-between items-center border-b border-gray-800 pb-4 mb-5">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 bg-purple-500/10 text-purple-400 rounded-lg border border-purple-500/20">
+                            <i data-lucide="bot" class="w-5 h-5"></i>
+                        </div>
+                        <div>
+                            <h2 class="font-bold text-lg text-white">02. Agent 产品 (Products)</h2>
+                            <p class="text-xs text-gray-400">面向特定场景或通用场景的自主执行体</p>
+                        </div>
+                    </div>
+                    <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20">落地形态</span>
+                </div>
+
+                <div class="space-y-4 flex-grow">
+                    <!-- Claude Code -->
+                    <div class="concept-card bg-gray-900/60 border border-gray-800 hover:border-purple-500/40 rounded-xl p-4 transition duration-300">
+                        <div class="flex justify-between items-start cursor-pointer" onclick="toggleDetails('detail-claudecode')">
+                            <div class="flex items-center gap-2">
+                                <span class="w-2.5 h-2.5 rounded-full bg-purple-500"></span>
+                                <h3 class="font-bold text-white text-base">Claude Code</h3>
+                            </div>
+                            <i data-lucide="chevron-down" class="w-4 h-4 text-gray-500 transition-transform duration-200" id="icon-detail-claudecode"></i>
+                        </div>
+                        <div id="detail-claudecode" class="mt-3 text-sm text-gray-300 border-t border-gray-800/60 pt-3 space-y-2">
+                            <p><strong class="text-purple-400">Anthropic 推出的终端本地 Coding Agent。</strong>它不仅是代码补全，更偏向于<span class="bg-purple-500/10 text-purple-300 px-1 py-0.5 rounded text-xs font-mono">“自主帮你完成开发任务”</span>。</p>
+                            <p class="text-xs text-gray-400 leading-relaxed">
+                                <strong>核心特点：</strong>它运行在终端命令行，能深度理解整个代码库（Repository），可自主跨多个文件修改、跑本地命令、运行测试、解决报错、管理 Git 提交。开发者的角色从“逐行编码”转变为“提需求和审核结果”。
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Codex -->
+                    <div class="concept-card bg-gray-900/60 border border-gray-800 hover:border-purple-500/40 rounded-xl p-4 transition duration-300">
+                        <div class="flex justify-between items-start cursor-pointer" onclick="toggleDetails('detail-codex')">
+                            <div class="flex items-center gap-2">
+                                <span class="w-2.5 h-2.5 rounded-full bg-purple-500"></span>
+                                <h3 class="font-bold text-white text-base">Codex</h3>
+                            </div>
+                            <i data-lucide="chevron-down" class="w-4 h-4 text-gray-500 transition-transform duration-200" id="icon-detail-codex"></i>
+                        </div>
+                        <div id="detail-codex" class="mt-3 text-sm text-gray-300 border-t border-gray-800/60 pt-3 space-y-2">
+                            <p><strong class="text-purple-400">OpenAI 的云端软件工程 Agent。</strong>与 Claude Code 本地路径不同，它更强调<span class="bg-purple-500/10 text-purple-300 px-1 py-0.5 rounded text-xs font-mono">“云端沙箱隔离与多任务交付”</span>。</p>
+                            <p class="text-xs text-gray-400 leading-relaxed">
+                                <strong>核心特点：</strong>在云端沙箱环境（Sandbox）中拉取代码仓库，并发运行各种自动化任务（如漏洞修复、新功能开发、持续集成测试），最终直接向代码库交付干净、可合并的 Pull Request。
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Manus -->
+                    <div class="concept-card bg-gray-900/60 border border-gray-800 hover:border-purple-500/40 rounded-xl p-4 transition duration-300">
+                        <div class="flex justify-between items-start cursor-pointer" onclick="toggleDetails('detail-manus')">
+                            <div class="flex items-center gap-2">
+                                <span class="w-2.5 h-2.5 rounded-full bg-purple-500"></span>
+                                <h3 class="font-bold text-white text-base">Manus</h3>
+                            </div>
+                            <i data-lucide="chevron-down" class="w-4 h-4 text-gray-500 transition-transform duration-200" id="icon-detail-manus"></i>
+                        </div>
+                        <div id="detail-manus" class="mt-3 text-sm text-gray-300 border-t border-gray-800/60 pt-3 space-y-2">
+                            <p><strong class="text-purple-400">结果交付型通用 Agent。</strong>它的核心特色在于直接代替人类进行多步骤的浏览器和端侧交互，<span class="bg-purple-500/10 text-purple-300 px-1 py-0.5 rounded text-xs font-mono">“替你做事并直接产出物理成品”</span>。</p>
+                            <p class="text-xs text-gray-400 leading-relaxed">
+                                <strong>核心特点：</strong>不需要人类一步步教，只要给出大目标，它就能自己在沙箱中打开网页搜索、搜集信息、用工具编写代码，最终自主产生一份完整的 PPT、报告、可运行的网页或小应用。
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- AutoGLM -->
+                    <div class="concept-card bg-gray-900/60 border border-gray-800 hover:border-purple-500/40 rounded-xl p-4 transition duration-300">
+                        <div class="flex justify-between items-start cursor-pointer" onclick="toggleDetails('detail-autoglm')">
+                            <div class="flex items-center gap-2">
+                                <span class="w-2.5 h-2.5 rounded-full bg-purple-500"></span>
+                                <h3 class="font-bold text-white text-base">AutoGLM</h3>
+                            </div>
+                            <i data-lucide="chevron-down" class="w-4 h-4 text-gray-500 transition-transform duration-200" id="icon-detail-autoglm"></i>
+                        </div>
+                        <div id="detail-autoglm" class="mt-3 text-sm text-gray-300 border-t border-gray-800/60 pt-3 space-y-2">
+                            <p><strong class="text-purple-400">智谱自主执行 Agent 能力及产品体系。</strong>它是典型的<span class="bg-purple-500/10 text-purple-300 px-1 py-0.5 rounded text-xs font-mono">“Phone Use / Browser Use”</span>的代表产品。</p>
+                            <p class="text-xs text-gray-400 leading-relaxed">
+                                <strong>核心特点：</strong>具备像人一样“看懂”手机屏幕和浏览器网页并进行模拟点击、滑动、输入的能力。在应用层，它可以帮你实现自动点外卖、自动发微信朋友圈、自动搜集整理特定行业数据。
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- 豆包手机 -->
+                    <div class="concept-card bg-gray-900/60 border border-gray-800 hover:border-purple-500/40 rounded-xl p-4 transition duration-300">
+                        <div class="flex justify-between items-start cursor-pointer" onclick="toggleDetails('detail-doubao')">
+                            <div class="flex items-center gap-2">
+                                <span class="w-2.5 h-2.5 rounded-full bg-purple-500"></span>
+                                <h3 class="font-bold text-white text-base">豆包手机</h3>
+                            </div>
+                            <i data-lucide="chevron-down" class="w-4 h-4 text-gray-500 transition-transform duration-200" id="icon-detail-doubao"></i>
+                        </div>
+                        <div id="detail-doubao" class="mt-3 text-sm text-gray-300 border-t border-gray-800/60 pt-3 space-y-2">
+                            <p><strong class="text-purple-400">AI 原生手机硬件与系统助手形态。</strong>它不是单纯的 App，而是把 AI 深度重组至<span class="bg-purple-500/10 text-purple-300 px-1 py-0.5 rounded text-xs font-mono">“系统级交互与硬件生态”</span>中。</p>
+                            <p class="text-xs text-gray-400 leading-relaxed">
+                                <strong>核心特点：</strong>实现物理按键直接唤起、全时无缝语音唤醒、深度调用系统底层 API 和各项手机功能，提供跨 App 数据流转能力，让整个手机硬件成为承载 AI 个人助手的贴身载体。
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Cowork -->
+                    <div class="concept-card bg-gray-900/60 border border-gray-800 hover:border-purple-500/40 rounded-xl p-4 transition duration-300">
+                        <div class="flex justify-between items-start cursor-pointer" onclick="toggleDetails('detail-cowork')">
+                            <div class="flex items-center gap-2">
+                                <span class="w-2.5 h-2.5 rounded-full bg-purple-500"></span>
+                                <h3 class="font-bold text-white text-base">Cowork</h3>
+                            </div>
+                            <i data-lucide="chevron-down" class="w-4 h-4 text-gray-500 transition-transform duration-200" id="icon-detail-cowork"></i>
+                        </div>
+                        <div id="detail-cowork" class="mt-3 text-sm text-gray-300 border-t border-gray-800/60 pt-3 space-y-2">
+                            <p><strong class="text-purple-400">Anthropic 研发的面向非研发办公场景的桌面 Agent。</strong>如果说 Claude Code 专攻研发，那 Cowork 就是<span class="bg-purple-500/10 text-purple-300 px-1 py-0.5 rounded text-xs font-mono">“白领知识工作者的虚拟助理”</span>。</p>
+                            <p class="text-xs text-gray-400 leading-relaxed">
+                                <strong>核心特点：</strong>深度整合于日常办公软件和桌面生态。专注于复杂的案头工作、海量资料多维交叉比对、日常公文撰写、跨软件审批和任务执行，旨在替非研发工作者解决繁琐流程。
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- OpenClaw / Clawdbot -->
+                    <div class="concept-card bg-gray-900/60 border border-gray-800 hover:border-purple-500/40 rounded-xl p-4 transition duration-300">
+                        <div class="flex justify-between items-start cursor-pointer" onclick="toggleDetails('detail-openclaw')">
+                            <div class="flex items-center gap-2">
+                                <span class="w-2.5 h-2.5 rounded-full bg-purple-500"></span>
+                                <h3 class="font-bold text-white text-base">OpenClaw / Clawdbot</h3>
+                            </div>
+                            <i data-lucide="chevron-down" class="w-4 h-4 text-gray-500 transition-transform duration-200" id="icon-detail-openclaw"></i>
+                        </div>
+                        <div id="detail-openclaw" class="mt-3 text-sm text-gray-300 border-t border-gray-800/60 pt-3 space-y-2">
+                            <p><strong class="text-purple-400">聊天入口驱动的个人 Agent。</strong>它倡导用户不改变习惯，在日常最频繁的通讯软件中<span class="bg-purple-500/10 text-purple-300 px-1 py-0.5 rounded text-xs font-mono">“以聊天为入口完成实际任务执行”</span>。</p>
+                            <p class="text-xs text-gray-400 leading-relaxed">
+                                <strong>核心特点：</strong>直接嵌入 WhatsApp、Telegram、Slack、飞书等成熟的社交和办公协作平台。在对话流中，它不仅扮演“回答者”，还能作为个人秘书，替你去查邮件、订日程、执行数据操作，主打“高频无摩擦”的入口体验。
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 分类 3: AI 编程方式 -->
+            <div class="bg-gray-900/40 rounded-2xl p-6 border border-emerald-500/10 glow-coding flex flex-col h-full">
+                <div class="flex justify-between items-center border-b border-gray-800 pb-4 mb-5">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 bg-emerald-500/10 text-emerald-400 rounded-lg border border-emerald-500/20">
+                            <i data-lucide="terminal" class="w-5 h-5"></i>
+                        </div>
+                        <div>
+                            <h2 class="font-bold text-lg text-white">03. AI 编程方式 (Coding Paradigm)</h2>
+                            <p class="text-xs text-gray-400">人与 AI 协作生成代码的范式转移</p>
+                        </div>
+                    </div>
+                    <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">范式革命</span>
+                </div>
+
+                <div class="space-y-4 flex-grow">
+                    <!-- Vibe Coding -->
+                    <div class="concept-card bg-gray-900/60 border border-gray-800 hover:border-emerald-500/40 rounded-xl p-4 transition duration-300">
+                        <div class="flex justify-between items-start cursor-pointer" onclick="toggleDetails('detail-vibecoding')">
+                            <div class="flex items-center gap-2">
+                                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                                <h3 class="font-bold text-white text-base">Vibe Coding <span class="text-xs font-normal text-gray-400">(氛围感编程 / 感觉流编程)</span></h3>
+                            </div>
+                            <i data-lucide="chevron-down" class="w-4 h-4 text-gray-500 transition-transform duration-200" id="icon-detail-vibecoding"></i>
+                        </div>
+                        <div id="detail-vibecoding" class="mt-3 text-sm text-gray-300 border-t border-gray-800/60 pt-3 space-y-2">
+                            <p><strong class="text-emerald-400">由 Andrej Karpathy 提出的 AI 时代全新软件开发范式。</strong>核心是<span class="bg-emerald-500/10 text-emerald-300 px-1 py-0.5 rounded text-xs font-mono">“人出感觉和方向，AI 交付最终代码”</span>。</p>
+                            <p class="text-xs text-gray-400 leading-relaxed">
+                                <strong>核心特点：</strong>人类彻底脱离手动敲击代码、研究繁琐 API、调试细枝末节的传统状态，只需用自然语言描述自己想要的效果、界面的“氛围感（Vibe）”和功能框架，其余 99% 的底层细节、代码重构、测试用例全部由后台的 AI 自动包办。
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 分类 4: Agent 能力组织方式 -->
+            <div class="bg-gray-900/40 rounded-2xl p-6 border border-amber-500/10 glow-ability flex flex-col h-full">
+                <div class="flex justify-between items-center border-b border-gray-800 pb-4 mb-5">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 bg-amber-500/10 text-amber-400 rounded-lg border border-amber-500/20">
+                            <i data-lucide="puzzle" class="w-5 h-5"></i>
+                        </div>
+                        <div>
+                            <h2 class="font-bold text-lg text-white">04. Agent能力组织方式 (Architecture)</h2>
+                            <p class="text-xs text-gray-400">AI 内部能力的沉淀与工程化的链路编排</p>
+                        </div>
+                    </div>
+                    <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">工程方法</span>
+                </div>
+
+                <div class="space-y-4 flex-grow">
+                    <!-- Skills -->
+                    <div class="concept-card bg-gray-900/60 border border-gray-800 hover:border-amber-500/40 rounded-xl p-4 transition duration-300">
+                        <div class="flex justify-between items-start cursor-pointer" onclick="toggleDetails('detail-skills')">
+                            <div class="flex items-center gap-2">
+                                <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                                <h3 class="font-bold text-white text-base">Skills <span class="text-xs font-normal text-gray-400">(技能包)</span></h3>
+                            </div>
+                            <i data-lucide="chevron-down" class="w-4 h-4 text-gray-500 transition-transform duration-200" id="icon-detail-skills"></i>
+                        </div>
+                        <div id="detail-skills" class="mt-3 text-sm text-gray-300 border-t border-gray-800/60 pt-3 space-y-2">
+                            <p><strong class="text-amber-400">给 Agent 封装好的、高内聚且可复用的能力包。</strong>本质上是在<span class="bg-amber-500/10 text-amber-300 px-1 py-0.5 rounded text-xs font-mono">“固化和沉淀专家经验”</span>。</p>
+                            <p class="text-xs text-gray-400 leading-relaxed">
+                                <strong>核心特点：</strong>技能包中包含了特定任务所需的 Prompt 指导、执行模版、自动化脚本和必要资源。它让 Agent 在面对类似任务时能直接激活、调用特定技能包，而不是每次都极其不稳定地重新探索提示词，极大提高了 Agent 生产环境的可靠性。
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Workflow -->
+                    <div class="concept-card bg-gray-900/60 border border-gray-800 hover:border-amber-500/40 rounded-xl p-4 transition duration-300">
+                        <div class="flex justify-between items-start cursor-pointer" onclick="toggleDetails('detail-workflow')">
+                            <div class="flex items-center gap-2">
+                                <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                                <h3 class="font-bold text-white text-base">Workflow <span class="text-xs font-normal text-gray-400">(工作流)</span></h3>
+                            </div>
+                            <i data-lucide="chevron-down" class="w-4 h-4 text-gray-500 transition-transform duration-200" id="icon-detail-workflow"></i>
+                        </div>
+                        <div id="detail-workflow" class="mt-3 text-sm text-gray-300 border-t border-gray-800/60 pt-3 space-y-2">
+                            <p><strong class="text-amber-400">预先确定、刚性编排的确定性执行链路。</strong>它是与“高灵活性、动态决定下一步”的完全体 Agent 相对的一种<span class="bg-amber-500/10 text-amber-300 px-1 py-0.5 rounded text-xs font-mono">“确定性工程链路”</span>。</p>
+                            <p class="text-xs text-gray-400 leading-relaxed">
+                                <strong>核心特点：</strong>典型的结构类似：“输入 -> 分类判断 -> 路由选择 -> 深度检索 -> 规范生成 -> 校验拦截 -> 输出”。尽管它内部的节点可以用大模型，但整体的运作脉络是不可擅自改变的，非常适用于金融、医疗、法律等对确定性、安全防线有极高要求的严肃业务场景。
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- 总结：生态关系全景剖析 -->
+        <section class="mt-12 bg-gray-900/50 rounded-2xl p-6 border border-gray-800">
+            <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                <i data-lucide="git-branch" class="text-indigo-400 w-5 h-5"></i>
+                生态联动与面试高频辨析
+            </h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
+                <div class="p-4 bg-gray-950/40 rounded-xl border border-gray-800/60">
+                    <h4 class="font-bold text-blue-400 mb-2 flex items-center gap-1.5">
+                        <span class="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
+                        连接机制：MCP vs A2A
+                    </h4>
+                    <p class="text-gray-300 text-xs leading-relaxed">
+                        <strong>MCP</strong> 是 AI 与外部硬工具（文件、数据库等）之间的物理插头。
+                        <br><strong class="mt-1 inline-block text-white">A2A</strong> 是 AI 之间用于高级商务、跨领域协作的信息握手。一个是“人机/机具接口”，一个是“社会化接口”。
+                    </p>
+                </div>
+                
+                <div class="p-4 bg-gray-950/40 rounded-xl border border-gray-800/60">
+                    <h4 class="font-bold text-purple-400 mb-2 flex items-center gap-1.5">
+                        <span class="w-1.5 h-1.5 rounded-full bg-purple-400"></span>
+                        产品落点：Claude Code vs Codex
+                    </h4>
+                    <p class="text-gray-300 text-xs leading-relaxed">
+                        两者皆属于 Coding Agent。
+                        <br><strong>Claude Code</strong> 深度贴合开发者的命令行本地工作习惯，直接影响“单兵作战”的极致效率；
+                        <br><strong class="mt-1 inline-block text-white">Codex</strong> 重在云端多任务并行的沙箱工程交付，面向企业端云原生研发。
+                    </p>
+                </div>
+
+                <div class="p-4 bg-gray-950/40 rounded-xl border border-gray-800/60">
+                    <h4 class="font-bold text-amber-400 mb-2 flex items-center gap-1.5">
+                        <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                        工程实现：Skills vs Workflow
+                    </h4>
+                    <p class="text-gray-300 text-xs leading-relaxed">
+                        <strong>Skills</strong> 是一个封装好的“技能模块”，由 Agent 在运行时根据目标自主调配和决定要不要用。
+                        <br><strong class="mt-1 inline-block text-white">Workflow</strong> 则是规定好方向的高速公路，AI 只能在这条确定的车道内按步骤疾驰。
+                    </p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- 底部 -->
+    <footer class="border-t border-gray-800 py-6 px-6 text-center text-xs text-gray-500 bg-gray-950/30">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
+            <p>© 2026 AI 生产力指南. 基于最前沿的 Agent 交互生态整理绘制</p>
+            <p class="flex items-center gap-1.5">
+                <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                简体中文纯净版 · 逻辑归类已就绪
+            </p>
+        </div>
+    </footer>
+
+    <!-- JS 逻辑部分 -->
+    <script>
+        // 初始化 Lucide 图标
+        lucide.createIcons();
+
+        // 切换折叠细节
+        function toggleDetails(elementId) {
+            const detailEl = document.getElementById(elementId);
+            const iconEl = document.getElementById('icon-' + elementId);
+            
+            if (detailEl.classList.contains('hidden')) {
+                detailEl.classList.remove('hidden');
+                iconEl.style.transform = 'rotate(180deg)';
+            } else {
+                detailEl.classList.add('hidden');
+                iconEl.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        // 初始化：默认展开所有面板
+        document.addEventListener("DOMContentLoaded", () => {
+            const allDetails = document.querySelectorAll('[id^="detail-"]');
+            allDetails.forEach(detail => {
+                detail.classList.remove('hidden');
+                const iconId = 'icon-' + detail.id;
+                const icon = document.getElementById(iconId);
+                if (icon) icon.style.transform = 'rotate(180deg)';
+            });
+        });
+
+        // 按钮交互：全部收起
+        document.getElementById('btn-collapse').addEventListener('click', () => {
+            const allDetails = document.querySelectorAll('[id^="detail-"]');
+            allDetails.forEach(detail => {
+                detail.classList.add('hidden');
+                const iconId = 'icon-' + detail.id;
+                const icon = document.getElementById(iconId);
+                if (icon) icon.style.transform = 'rotate(0deg)';
+            });
+        });
+
+        // 按钮交互：全部展开
+        document.getElementById('btn-expand').addEventListener('click', () => {
+            const allDetails = document.querySelectorAll('[id^="detail-"]');
+            allDetails.forEach(detail => {
+                detail.classList.remove('hidden');
+                const iconId = 'icon-' + detail.id;
+                const icon = document.getElementById(iconId);
+                if (icon) icon.style.transform = 'rotate(180deg)';
+            });
+        });
+    </script>
+</body>
+</html>
