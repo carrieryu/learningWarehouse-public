@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import argparse
 import html
-import json
 import shutil
 import sys
 from dataclasses import dataclass
