@@ -22,27 +22,20 @@ Windows 也可双击 `tools/sync.bat`。
 
 | 写法 | 示例 | 说明 |
 |------|------|------|
-| `@别名` | `@ai_basics_html` | **推荐**。别名定义在主仓库 [`publish.aliases.yaml`](../publish.aliases.yaml)，父项目改路径时只改别名文件 |
-| 相对路径 | `问题积累/xxx.md` | 相对 `source_root`（默认 `..` 即主仓库根目录） |
+| 相对路径 | `AI Agent相关/AI基础认知/solution.html` | 相对 `source_root`（默认 `..` 即主仓库根目录） |
 | glob（批量） | `**/solution.html`（省略 target） | 匹配多个文件，target 自动取源文件所在目录 |
 | 绝对路径 | `D:/yld/projects/learning-warehouse/...` | 可用但不推荐，换机器会失效 |
 
-`publish.config.yaml` 示例：
-
 ```yaml
 source_root: ..
-aliases_file: publish.aliases.yaml
 
 entries:
-  - source: "@ai_basics_html"
+  - source: "AI Agent相关/AI基础认知/solution.html"
     target: "AI Agent相关/AI基础认知/AI 基础认知"
     mode: html
-```
 
-主仓库 [`publish.aliases.yaml`](../publish.aliases.yaml) 示例：
-
-```yaml
-ai_basics_html: "AI Agent相关/AI基础认知/solution.html"
+  - source: "**/solution.html"
+    mode: html
 ```
 
 | mode | 行为 |

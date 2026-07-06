@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import argparse
 import html
-import re
 import shutil
 import sys
 from dataclasses import dataclass
@@ -13,7 +12,6 @@ from pathlib import Path
 from typing import Any
 
 GLOB_CHARS = frozenset("*?[]")
-ALIAS_PATTERN = re.compile(r"^@([A-Za-z0-9_.-]+)$")
 
 try:
     import yaml
@@ -43,39 +41,10 @@ class NavItem:
     mode: str
 
 
-def load_aliases(source_root: Path, config_data: dict[str, Any]) -> dict[str, str]:
-    aliases: dict[str, str] = {}
-    inline = config_data.get("aliases") or {}
-    if isinstance(inline, dict):
-        for key, value in inline.items():
-            if value:
-                aliases[str(key)] = str(value).strip()
-
-    aliases_file = config_data.get("aliases_file")
-    if aliases_file:
-        alias_path = (source_root / str(aliases_file)).resolve()
-        if alias_path.is_file():
-            with alias_path.open(encoding="utf-8") as f:
-                file_data = yaml.safe_load(f) or {}
-            if isinstance(file_data, dict):
-                for key, value in file_data.items():
-                    if value and not str(key).startswith("#"):
-                        aliases[str(key)] = str(value).strip()
-    return aliases
-
-
-def resolve_source_ref(source: str, source_root: Path, aliases: dict[str, str]) -> str:
+def normalize_source(source: str) -> str:
     source = source.strip()
     if not source:
         return source
-
-    alias_match = ALIAS_PATTERN.match(source)
-    if alias_match:
-        alias_name = alias_match.group(1)
-        if alias_name not in aliases:
-            known = ", ".join(sorted(aliases)) or "(none)"
-            raise KeyError(f"Unknown alias '@{alias_name}'. Known aliases: {known}")
-        return aliases[alias_name]
 
     path = Path(source)
     if path.is_absolute():
@@ -94,7 +63,7 @@ def find_source_file(source_root: Path, source_ref: str) -> Path:
             rel_paths = "\n".join(f"  - {p.relative_to(source_root)}" for p in files)
             raise FileNotFoundError(
                 f"Glob matched multiple files ({source_ref}). "
-                f"Use a more specific pattern or @alias:\n{rel_paths}"
+                f"Use a more specific pattern or omit target for batch publish:\n{rel_paths}"
             )
         return files[0]
 
@@ -160,12 +129,11 @@ def expand_config_entry(
     ]
 
 
-def load_config(config_path: Path) -> tuple[Path, dict[str, str], list[SyncEntry]]:
+def load_config(config_path: Path) -> tuple[Path, list[SyncEntry]]:
     with config_path.open(encoding="utf-8") as f:
         data = yaml.safe_load(f) or {}
 
     source_root = (config_path.parent / data.get("source_root", "..")).resolve()
-    aliases = load_aliases(source_root, data)
     raw_entries = data.get("entries") or []
     entries: list[SyncEntry] = []
 
@@ -177,12 +145,12 @@ def load_config(config_path: Path) -> tuple[Path, dict[str, str], list[SyncEntry
         mode = str(item.get("mode", "copy")).strip().lower()
         if not source:
             continue
-        resolved_source = resolve_source_ref(source, source_root, aliases)
+        resolved_source = normalize_source(source)
         entries.extend(
             expand_config_entry(source_root, source, target, mode, resolved_source)
         )
 
-    return source_root, aliases, entries
+    return source_root, entries
 
 
 def reset_site_dir(site_dir: Path) -> None:
@@ -332,14 +300,13 @@ def format_source_label(entry: SyncEntry) -> str:
 
 
 def run_sync(config_path: Path, site_dir: Path, strict: bool) -> int:
-    source_root, aliases, entries = load_config(config_path)
+    source_root, entries = load_config(config_path)
     if not entries:
         print("No entries found in publish.config.yaml")
         return 1
 
     print(f"Config: {config_path}")
     print(f"Source root: {source_root}")
-    print(f"Aliases loaded: {len(aliases)}")
     print(f"Site output: {site_dir}")
     print(f"Entries: {len(entries)}")
     print()
