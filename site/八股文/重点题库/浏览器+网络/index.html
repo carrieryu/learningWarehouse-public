@@ -1,0 +1,1226 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>浏览器 + 网络</title>
+  <style>
+    body {
+      font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+      line-height: 1.75;
+      color: #1f2937;
+      background: #fff;
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 32px 24px 64px;
+    }
+    h1, h2, h3, h4, h5, h6 { line-height: 1.35; margin: 1.6em 0 0.6em; }
+    p { margin: 0.8em 0; }
+    ul, ol { padding-left: 1.4em; }
+    li { margin: 0.35em 0; }
+    code {
+      font-family: ui-monospace, Consolas, monospace;
+      background: #f3f4f6;
+      padding: 0.1em 0.35em;
+      border-radius: 4px;
+    }
+    pre {
+      background: #111827;
+      color: #f9fafb;
+      padding: 16px;
+      border-radius: 8px;
+      overflow-x: auto;
+    }
+    pre code { background: transparent; padding: 0; color: inherit; }
+    img { max-width: 100%; height: auto; border-radius: 8px; }
+    a { color: #2563eb; }
+  </style>
+</head>
+<body>
+  <article><h2><span style="color: rgb(17, 124, 238)">【中等】</span>什么是回流（Reflow）和重绘（Repaint）？它们的触发场景是什么？<br></h2>
+<p>这个问题基本属于<strong>浏览器渲染原理的必考点</strong><br></p>
+<p>先给大家一段代码，这段代码展示了 重绘 和 回流 的场景<br></p>
+<pre><code class="language-javascript">&lt;div id=&quot;box&quot;&gt;&lt;/div&gt;
+
+&lt;style&gt;
+  #box {
+    width: 100px;
+    height: 100px;
+    background-color: red;
+  }
+&lt;/style&gt;
+
+&lt;script&gt;
+  const box = document.getElementById('box');
+
+  // 改宽度：会触发回流 + 重绘
+  setTimeout(() =&gt; {
+    box.style.width = &quot;200px&quot;;
+  }, 1000);
+
+  // 改颜色：只触发重绘
+  setTimeout(() =&gt; {
+    box.style.backgroundColor = &quot;blue&quot;;
+  }, 2000);
+&lt;/script&gt;</code></pre>
+<hr>
+<p><strong>先说回流（Reflow）：</strong>回流就是浏览器需要重新计算页面元素的<strong>几何结构和布局</strong>。比如位置、大小、盒子模型这些东西一旦变了，浏览器得重新排版。常见触发场景有：<br></p>
+<ul>
+<li>改变元素的大小（width、height、padding、margin、border）。<br></li>
+<li>改变元素的显示状态（比如<code>display: none</code>→<code>block</code>）。<br></li>
+<li>DOM 结构的增删，或者位置变化。<br></li>
+<li>获取一些需要最新布局信息的属性，比如<code>offsetHeight</code>、<code>getBoundingClientRect()</code>，这些都会强制触发回流。<br></li>
+</ul>
+<hr>
+<p><strong>再说重绘（Repaint）：</strong>重绘是浏览器已经知道元素的位置和大小没变，但需要重新画一遍样式，比如颜色、背景、阴影。它不用重新计算布局，只是重新绘制像素。常见触发场景有：<br></p>
+<ul>
+<li>改变颜色（color、background-color）。<br></li>
+<li>改变可见性（<code>visibility: hidden</code>）。<br></li>
+<li>改变阴影（box-shadow）。<br></li>
+</ul>
+<hr>
+<p><strong>一个比较核心的面试区别点是：</strong><br></p>
+<ul>
+<li>回流一定会引起重绘，但重绘不一定回流。<br></li>
+<li>回流开销更大，因为它会触发布局计算，性能影响比单纯的重绘要重。<br></li>
+</ul>
+<p><br></p>
+<h2><span style="color: rgb(223, 42, 63)">【困难】</span>浏览器的事件轮训机制是什么样子？<br></h2>
+<hr>
+<h3><strong>浏览器的事件轮询机制是什么？</strong><br></h3>
+<p>浏览器的事件轮询机制是一个协调 JavaScript 执行、异步任务处理和 UI 渲染的机制，它保证了浏览器在单线程环境下有序执行任务。<br></p>
+<p>JavaScript 是单线程的，事件轮询机制通过调用栈、任务队列和事件循环这三部分协同工作，管理同步任务与异步任务的执行顺序。<br></p>
+<hr>
+<h3><strong>事件轮询的核心组成</strong><br></h3>
+<ul>
+<li><strong>调用栈（Call Stack）</strong><br></li>
+<li>存储当前执行的函数调用。<br></li>
+<li>同步任务（如普通函数调用）会直接进入调用栈执行，执行完后从栈中弹出。<br></li>
+<li><strong>Web APIs</strong><br></li>
+<li>异步任务（如<code>setTimeout</code>、DOM 事件、网络请求）由浏览器的 Web APIs 处理，不阻塞主线程。<br></li>
+<li><strong>任务队列（Task Queue）</strong><br></li>
+<li>存储待执行的异步任务的回调。<br></li>
+<li>分为：<br></li>
+<li><strong>宏任务（Macro Task）</strong>：<code>setTimeout</code>、<code>setInterval</code>、DOM 事件。<br></li>
+<li><strong>微任务（Micro Task）</strong>：<code>Promise.then</code>、<code>MutationObserver</code>。<br></li>
+<li><strong>事件循环（Event Loop）</strong><br></li>
+<li>不断检查调用栈是否为空。<br></li>
+<li>如果调用栈为空，就从任务队列中取出任务放入调用栈执行。<br></li>
+<li><strong>执行优先级</strong>：微任务优先于宏任务。<br></li>
+</ul>
+<hr>
+<h3><strong>执行顺序示例</strong><br></h3>
+<h4>示例代码：<br></h4>
+<h4>执行顺序分析：<br></h4>
+<ul>
+<li><strong>同步任务</strong>：<br></li>
+<li><code>console.log('Start')</code>执行。<br></li>
+<li>注册<code>setTimeout</code>回调（两个宏任务）。<br></li>
+<li>注册<code>Promise.then</code>回调（一个微任务）。<br></li>
+<li><code>console.log('End')</code>执行。<br></li>
+<li><strong>微任务优先执行</strong>：<br></li>
+<li>执行<code>Promise.then</code>回调，输出<code>Micro Task 1</code>。<br></li>
+<li><strong>宏任务按顺序执行</strong>：<br></li>
+<li>执行第一个<code>setTimeout</code>回调，输出<code>Macro Task 1</code>。<br></li>
+<li>执行第二个<code>setTimeout</code>回调，输出<code>Macro Task 2</code>。<br></li>
+</ul>
+<h4>最终输出：<br></h4>
+<hr>
+<h3><strong>事件轮询机制的工作流程</strong><br></h3>
+<ul>
+<li><strong>执行同步任务</strong>：调用栈执行所有同步任务。<br></li>
+<li><strong>处理微任务队列</strong>：优先清空所有微任务。<br></li>
+<li><strong>执行宏任务</strong>：从宏任务队列取出任务执行。<br></li>
+<li><strong>UI 渲染</strong>：如果任务队列清空，浏览器执行页面渲染。<br></li>
+<li><strong>下一轮循环</strong>：返回第 1 步，进入下一轮事件循环。<br></li>
+</ul>
+<hr>
+<h3><strong>面试答题要点</strong><br></h3>
+<ul>
+<li><strong>开篇定义</strong>：“事件轮询机制是浏览器协调同步任务与异步任务的一种机制，核心在于调用栈、任务队列和事件循环的协作。”<br></li>
+<li><strong>详细解释组成部分</strong>：简单说明调用栈、Web APIs、任务队列（宏任务与微任务）以及事件循环的作用。<br></li>
+<li><strong>示例解释执行顺序</strong>：通过一个典型的代码例子说明微任务优先级、宏任务执行顺序。<br></li>
+<li><strong>总结</strong>：强调 JavaScript 的单线程特性，以及事件轮询机制如何保证任务有序执行。<br></li>
+</ul>
+<p><br></p>
+<h2><span style="color: rgb(223, 42, 63)">【困难】</span>NodeJS 和 浏览器的轮询机制有什么区别？<br></h2>
+<hr>
+<h3><strong>1. 事件轮询的相似点</strong><br></h3>
+<ul>
+<li><strong>单线程模型</strong>：无论是浏览器还是 Node.js，JavaScript 都是单线程执行，通过事件轮询机制协调同步任务和异步任务。<br></li>
+<li><strong>异步任务的处理方式</strong>：两者都将异步任务分为<strong>宏任务（Macro Task）</strong><strong>和</strong><strong>微任务（Micro Task）</strong>，并按照优先级调度执行：<br></li>
+<li>微任务优先执行。<br></li>
+<li>宏任务按队列顺序执行。<br></li>
+</ul>
+<hr>
+<h3><strong>2. Node.js 和浏览器事件轮询机制的区别</strong><br></h3>
+<h4><strong>2.1 设计目的不同</strong><br></h4>
+<ul>
+<li><strong>浏览器</strong>：事件轮询机制主要用于处理用户交互、DOM 操作和页面渲染，因此关注点是高效响应用户事件和保持流畅的 UI 渲染。<br></li>
+<li><strong>Node.js</strong>：Node.js 的事件轮询机制基于<code>libuv</code>实现，设计目的是支持高性能的 I/O 操作，适合后端的高并发场景。<br></li>
+</ul>
+<hr>
+<h4><strong>2.2 执行上下文</strong><br></h4>
+<ul>
+<li><strong>浏览器</strong>：包含以下常见任务来源：<br></li>
+<li><strong>宏任务</strong>：<code>setTimeout</code>、<code>setInterval</code>、<code>setImmediate</code>、DOM 事件。<br></li>
+<li><strong>微任务</strong>：<code>Promise.then</code>、<code>MutationObserver</code>。<br></li>
+<li><strong>渲染相关任务</strong>：在每帧（约 16ms）触发一次。<br></li>
+<li><strong>Node.js</strong>：Node.js 的事件轮询包含六个阶段（详见 2.4）。这些阶段主要用于调度 I/O 任务、定时器和其他系统级任务。<br></li>
+</ul>
+<hr>
+<h4><strong>2.3 微任务的执行时机</strong><br></h4>
+<ul>
+<li><strong>浏览器</strong>：微任务会在每个宏任务结束后立即执行。<br></li>
+<li><strong>Node.js</strong>：微任务会在当前阶段执行完所有回调后立即执行，无论是哪个阶段。<br></li>
+</ul>
+<h4>示例：<br></h4>
+<p><strong>浏览器输出</strong>：<br></p>
+<p><strong>Node.js 输出</strong>：<br></p>
+<p>两者输出一致，但微任务的执行机制在 Node.js 的事件循环阶段中更复杂（详见 2.4）。<br></p>
+<hr>
+<h4><strong>2.4 Node.js 的事件循环阶段</strong><br></h4>
+<p>Node.js 的事件轮询分为<strong>6 个阶段</strong>，每个阶段处理特定类型的任务，执行顺序如下：<br></p>
+<ul>
+<li><code>timers</code><strong>阶段</strong>：执行由<code>setTimeout</code>和<code>setInterval</code>调度的回调。<br></li>
+<li><code>pending</code><strong>阶段</strong>：执行延迟到下轮循环的 I/O 回调。<br></li>
+<li><code>idle</code><strong>阶段</strong>：几乎不用（内部使用，处理一些空闲操作）。<br></li>
+<li><code>poll</code><strong>阶段</strong>：处理新的 I/O 事件，大多数异步任务的回调在此阶段执行（如文件读取）。<br></li>
+<li><code>check</code><strong>阶段</strong>：执行由<code>setImmediate</code>调度的回调。<br></li>
+<li><code>close</code><strong>阶段</strong>：执行一些关闭事件的回调（如<code>socket.close</code>）。<br></li>
+</ul>
+<p><strong>注意</strong>：<br></p>
+<ul>
+<li>每个阶段完成后都会执行微任务队列（<code>process.nextTick</code>和<code>Promise.then</code>）。<br></li>
+<li><code>process.nextTick</code>的回调优先于微任务队列中的<code>Promise.then</code>。<br></li>
+</ul>
+<h4>示例：<br></h4>
+<p><strong>输出</strong>：<br></p>
+<hr>
+<h3><strong>3. 总结</strong><br></h3>
+<h4><strong>核心区别对比表</strong><br></h4>
+<p>特性<br></p>
+<p>浏览器事件轮询<br></p>
+<p>Node.js 事件轮询<br></p>
+<p><strong>设计目的</strong><br></p>
+<p>面向 UI 渲染与用户交互<br></p>
+<p>面向 I/O 操作与高并发<br></p>
+<p><strong>微任务执行时机</strong><br></p>
+<p>每个宏任务结束后立即执行<br></p>
+<p>当前阶段执行完后立即执行<br></p>
+<p><strong>阶段划分</strong><br></p>
+<p>无明显阶段划分<br></p>
+<p>分为 6 个阶段<br></p>
+<p><strong>特有任务类型</strong><br></p>
+<p>渲染任务（如 DOM 更新）<br></p>
+<p><code>setImmediate</code>、<code>process.nextTick</code><br></p>
+<p><strong>运行环境</strong><br></p>
+<p>浏览器<br></p>
+<p>基于<code>libuv</code>的事件循环<br></p>
+<h4><strong>答题逻辑</strong>：<br></h4>
+<ul>
+<li>先说明两者的相似点（单线程模型、宏任务/微任务机制）。<br></li>
+<li>分析两者的设计目的不同（面向用户交互 vs 高性能 I/O）。<br></li>
+<li>对比微任务执行时机和 Node.js 的 6 个阶段。<br></li>
+<li>通过示例强化对比效果。<br></li>
+</ul>
+<p><br></p>
+<p><br></p>
+<h2><span style="color: rgb(17, 124, 238)">【中等】</span>什么场景下会有跨域？怎么解决？<br></h2>
+<p>跨域是前端绕不过去的一个问题，特别是在校招的面试中，也是比较常见的。<br></p>
+<p>很多同学的回答会停留在“请求不同源就跨域了，用 CORS 解决”这种很表面的层面，这对于大厂面试肯定的不够的<br></p>
+<p>那么什么场景下会出现跨域呢？<br></p>
+<p>只要不符合<strong>同源协议（同协议、同域名、同端口）</strong>，那么就会跨域。<br></p>
+<p>举几个常见的实际场景：<br></p>
+<h3>1. 开发环境前后端分离（最常见）<br></h3>
+<p>本地前端起了一个<code>http://localhost:3000</code>，后端接口是<code>http://localhost:8080</code>，虽然都是<code>localhost</code>，但端口不一样，也算跨域。<br></p>
+<h3>2. 正式环境多子域名<br></h3>
+<p>比如页面在<code>https://www.example.com</code>，接口却是<code>https://api.example.com</code>，虽然主域相同，但子域不同，也触发跨域。<br></p>
+<h3>3. 静态资源 CDN 加载<br></h3>
+<p>页面在<code>https://app.my.com</code>，但图片、JS、CSS 等从<code>https://cdn.my.com</code>加载，如果没有配置 CORS，也可能遇到限制。<br></p>
+<h3>4. iframe 嵌套外部页面<br></h3>
+<p>主页面是<code>a.com</code>，iframe 嵌套的是<code>b.com</code>，这时候访问<code>iframe</code>里面的内容，就会遇到跨域限制。<br></p>
+<h3>5. 跨域写 cookie（很容易忽略）<br></h3>
+<p>很多项目想让多个子域共享登录态（写 cookie），但不设置<code>document.domain</code>或<code>cookie</code>的 domain 字段，也会受限。<br></p>
+<p>那么<strong>怎么解决跨域问题？</strong>呢？<br></p>
+<p>不同场景下的解决方式也不太一样，下面是主流几种方式：<br></p>
+<h3>1. CORS（最常用）<br></h3>
+<p>CORS（跨域资源共享）是服务器设置 HTTP 响应头，告诉浏览器“这不是非法访问，放心用”。<br></p>
+<p>关键响应头有几个：<br></p>
+<ul>
+<li><code>Access-Control-Allow-Origin</code>：允许的来源，比如设置为<code>*</code>或具体的<code>http://localhost:3000</code><br></li>
+<li><code>Access-Control-Allow-Credentials</code>：是否允许携带 cookie<br></li>
+<li><code>Access-Control-Allow-Methods</code>：允许的请求方法<br></li>
+<li><code>Access-Control-Allow-Headers</code>：允许携带的请求头字段<br></li>
+</ul>
+<p>注意：前端设置<code>withCredentials = true</code>时，服务端必须明确写具体域名，不能是<code>*</code>，并且开启<code>Access-Control-Allow-Credentials</code>。<br></p>
+<h3>2. 反向代理（前端开发常用）<br></h3>
+<p>比如本地用 Vite、Webpack 起服务时，可以设置 proxy，把<code>/api</code>的请求代理到<code>http://localhost:8080</code>，浏览器以为是同源请求，其实后面被代理走了。<br></p>
+<p>这种方式适合本地开发或某些中转服务器，比如用 Nginx 做一层反向代理。<br></p>
+<p><br></p>
+<h3>3. JSONP（只能 GET，已过时了）<br></h3>
+<p>早期常用的解决方案，通过<code>&lt;script&gt;</code>标签绕过同源限制（因为<code>&lt;script&gt;</code>标签不受同源限制），通过回调函数传值，但只能支持 GET 请求，且存在安全隐患。<br></p>
+<p>现在基本被淘汰了。<br></p>
+<h3>4. postMessage（跨域 iframe 通信）<br></h3>
+<p>当你必须用<code>iframe</code>嵌套外部页面，又想传值时，可以用<code>window.postMessage</code>实现跨域通信。<br></p>
+<h3>5. 设置 document.domain（只适用于同主域的子域通信）<br></h3>
+<p>比如<code>a.example.com</code>和<code>b.example.com</code>，都设置<code>document.domain = 'example.com'</code>，可以实现部分跨域通信，但这种方式要求主域一致，且页面可控。<br></p>
+<h2><span style="color: rgb(17, 124, 238)">【中等】</span>浏览器同时打开多个tab，有哪些方式可以通讯<br></h2>
+<p>在浏览器中同时打开多个标签页时，可以使用不同的方法进行通讯和数据共享，具体取决于你的需求和安全要求。<strong>核心是找到一个通用的第三方。</strong>这个第三方可以同时联系到标签一 和 标签二。（同样的逻辑可以参考<code>vuex</code>或<code>pinia</code>）<br></p>
+<hr>
+<h3><strong>1. BroadcastChannel</strong><br></h3>
+<ul>
+<li><strong>适用场景</strong>：同源的多个 Tab 需要简单高效的消息广播。<br></li>
+<li><strong>实现原理</strong>：<code>BroadcastChannel</code>提供了一个发布/订阅模型，允许同源页面间传递消息。<br></li>
+</ul>
+<h4>示例：<br></h4>
+<p><strong>Tab 1</strong>发送消息：<br></p>
+<p><strong>Tab 2</strong>接收消息：<br></p>
+<ul>
+<li><strong>优点</strong>：简单易用，支持多 Tab 广播。<br></li>
+<li><strong>限制</strong>：需要页面同源，浏览器支持范围有限（现代浏览器支持良好）。<br></li>
+</ul>
+<hr>
+<h3><strong>2. LocalStorage + StorageEvent</strong><br></h3>
+<ul>
+<li><strong>适用场景</strong>：同源页面间低频、简单的状态同步。<br></li>
+<li><strong>实现原理</strong>：<code>localStorage</code>数据更新时，其他 Tab 会触发<code>storage</code>事件，页面可监听到数据变化。<br></li>
+</ul>
+<h4>示例：<br></h4>
+<p><strong>Tab 1</strong>写入数据：<br></p>
+<p><strong>Tab 2</strong>监听变化：<br></p>
+<ul>
+<li><strong>优点</strong>：简单实现，无需额外依赖。<br></li>
+<li><strong>限制</strong>：只在写操作时触发事件；不能直接传递复杂对象；通信延迟较高。<br></li>
+</ul>
+<hr>
+<h3><strong>3. Service Worker</strong><br></h3>
+<ul>
+<li><strong>适用场景</strong>：需要多个 Tab 与后台服务共享信息或实现双向通信。<br></li>
+<li><strong>实现原理</strong>：通过 Service Worker 的消息通道，Tab 可以与 Service Worker 通信，Service Worker 也可以作为中间层实现多个 Tab 间的消息转发。<br></li>
+</ul>
+<h4>示例：<br></h4>
+<p><strong>Tab 发送消息到 Service Worker</strong>：<br></p>
+<p><strong>Service Worker 监听消息并广播</strong>：<br></p>
+<p><strong>Tab 接收消息</strong>：<br></p>
+<ul>
+<li><strong>优点</strong>：支持复杂场景，消息转发机制灵活。<br></li>
+<li><strong>限制</strong>：需要注册 Service Worker，开发复杂度稍高。<br></li>
+</ul>
+<hr>
+<h3><strong>4. SharedWorker</strong><br></h3>
+<ul>
+<li><strong>适用场景</strong>：需要多个同源 Tab 长连接并共享状态。<br></li>
+<li><strong>实现原理</strong>：<code>SharedWorker</code>允许多个 Tab 共享一个 Worker 线程，并通过消息通道通信。<br></li>
+</ul>
+<h4>示例：<br></h4>
+<p><strong>SharedWorker 文件（worker.js）</strong>：<br></p>
+<p><strong>Tab 使用 SharedWorker</strong>：<br></p>
+<ul>
+<li><strong>优点</strong>：支持双向通信，性能较好。<br></li>
+<li><strong>限制</strong>：需要同源，较少应用于简单场景，现代浏览器支持较好。<br></li>
+</ul>
+<hr>
+<h3><strong>5. WebSocket</strong><br></h3>
+<ul>
+<li><strong>适用场景</strong>：跨域或需要实时通信的复杂场景（不仅限于浏览器 Tab 通信）。<br></li>
+<li><strong>实现原理</strong>：多个 Tab 通过 WebSocket 连接同一个服务端，服务端转发消息。<br></li>
+</ul>
+<h4>示例：<br></h4>
+<p><strong>Tab 连接 WebSocket 服务</strong>：<br></p>
+<ul>
+<li><strong>优点</strong>：不受同源限制，支持实时通信。<br></li>
+<li><strong>限制</strong>：需要服务端支持，需额外开发和维护。<br></li>
+</ul>
+<hr>
+<h3><strong>6. PostMessage + window.opener</strong><br></h3>
+<ul>
+<li><strong>适用场景</strong>：当 Tab 是通过<code>window.open</code>打开的，支持父窗口与子窗口之间的通信。<br></li>
+<li><strong>实现原理</strong>：通过<code>postMessage</code>方法向特定窗口发送消息。<br></li>
+</ul>
+<h4>示例：<br></h4>
+<p><strong>父窗口发送消息给子窗口</strong>：<br></p>
+<p><strong>子窗口接收消息</strong>：<br></p>
+<ul>
+<li><strong>优点</strong>：灵活支持跨域通信。<br></li>
+<li><strong>限制</strong>：仅限于父子窗口关系，不能广播到多个 Tab。<br></li>
+</ul>
+<hr>
+<h3><strong>总结</strong><br></h3>
+<p>通信方式<br></p>
+<p>优点<br></p>
+<p>限制<br></p>
+<p>BroadcastChannel<br></p>
+<p>简单易用，支持多 Tab 广播<br></p>
+<p>仅支持同源页面<br></p>
+<p>LocalStorage<br></p>
+<p>易于实现，浏览器支持广泛<br></p>
+<p>触发延迟高，传递数据有限<br></p>
+<p>Service Worker<br></p>
+<p>支持复杂场景，支持离线功能<br></p>
+<p>实现复杂度较高<br></p>
+<p>SharedWorker<br></p>
+<p>长连接支持，同源多个 Tab 通信性能较好<br></p>
+<p>不支持跨域，使用场景受限<br></p>
+<p>WebSocket<br></p>
+<p>实时通信，支持跨域<br></p>
+<p>依赖服务端，开发成本高<br></p>
+<p>PostMessage<br></p>
+<p>灵活支持跨域<br></p>
+<p>仅限于父子窗口<br></p>
+<p>根据场景选择合适的方式，可以提高开发效率和用户体验。<br></p>
+<p><br></p>
+<h2><span style="color: rgb(17, 124, 238)">【中等】</span>用户打开 URL 到浏览器完全渲染的全过程<br></h2>
+<p>用户打开一个 URL 并在浏览器中完全渲染页面的全过程可以分为多个阶段，从用户输入 URL 开始，到页面完全显示出来结束。<br></p>
+<p>整个流程可以简单分为以下几个步骤：<br></p>
+<h3>工作流程<br></h3>
+<ul>
+<li><strong>用户请求</strong>：用户向某个网站发出请求（如打开一个网页或视频）。<br></li>
+<li><strong>CDN 调度</strong>：CDN 根据用户的 IP 地址判断最近的 CDN 节点，并将请求定向到该节点。<br></li>
+<li><strong>缓存检查</strong>：CDN 节点检查是否有该内容的缓存。<br></li>
+<li><strong>有缓存</strong>：直接返回缓存内容给用户。<br></li>
+<li><strong>无缓存</strong>：向原始服务器请求内容并缓存，然后返回给用户。<br></li>
+<li><strong>返回内容</strong>：用户接收到响应内容。<br></li>
+</ul>
+<h3>完整流程<br></h3>
+<p>完整流程共分为 8 个核心步骤：<br></p>
+<ul>
+<li>用户输入 URL<br></li>
+<li>DNS 解析 → 获取 IP 地址<br></li>
+<li>建立 TCP 连接（三次握手）<br></li>
+<li>发送 HTTP 请求<br></li>
+<li>服务器处理请求并返回响应<br></li>
+<li>浏览器接收响应 → 构建 DOM 和 CSSOM<br></li>
+<li>构建渲染树 → 布局 → 绘制<br></li>
+<li>执行 JS → 完成页面渲染<br></li>
+</ul>
+<p><br></p>
+<p>以下是详细解释：<br></p>
+<h3>1.<strong>用户输入 URL</strong><br></h3>
+<ul>
+<li>当用户在浏览器地址栏中输入 URL 并按下回车，浏览器会开始处理这个请求。<br></li>
+</ul>
+<h3>2.<strong>DNS 解析</strong><br></h3>
+<ul>
+<li>浏览器首先通过 DNS（域名系统）解析 URL 中的域名，将其转换为 IP 地址。这个过程可能涉及以下步骤：<br></li>
+<li>浏览器缓存：浏览器先查找本地缓存中是否已经有该域名的 IP 地址。<br></li>
+<li>操作系统缓存：如果浏览器没有缓存，操作系统会查找其缓存。<br></li>
+<li>路由器缓存：如果操作系统没有缓存，查询会继续通过路由器。<br></li>
+<li>ISP 的 DNS 服务器：最终，查询可能需要通过互联网服务提供商（ISP）的 DNS 服务器获取 IP 地址。<br></li>
+</ul>
+<h3>3.<strong>建立 TCP 连接</strong><br></h3>
+<ul>
+<li>通过 IP 地址确定了目标服务器后，浏览器与服务器通过<strong>TCP 三次握手</strong>建立连接。三次握手过程如下：<br></li>
+<li>客户端发送 SYN（同步）请求。<br></li>
+<li>服务器收到请求后，返回 SYN+ACK。<br></li>
+<li>客户端收到 ACK 后，发送 ACK 确认连接。<br></li>
+</ul>
+<h3>4.<strong>发送 HTTP 请求</strong><br></h3>
+<ul>
+<li>一旦 TCP 连接建立，浏览器向服务器发送<strong>HTTP 请求</strong>，包括请求头和相关参数。请求头中包含以下信息：<br></li>
+<li>请求的资源类型（HTML、CSS、JS 等）<br></li>
+<li>浏览器信息（User-Agent）<br></li>
+<li>可接受的内容类型（Accept）<br></li>
+<li>缓存信息（Cache-Control）等。<br></li>
+</ul>
+<h3>5.<strong>服务器处理请求</strong><br></h3>
+<ul>
+<li>服务器接收到请求后，处理请求并返回相应的资源（HTML 文件、图片、CSS、JavaScript 等）。这一步包括：<br></li>
+<li>服务器可能需要从数据库或文件系统中获取数据。<br></li>
+<li>如果是动态网页，服务器需要运行相关代码生成 HTML 内容（例如 PHP、Node.js 等服务器端语言）。<br></li>
+</ul>
+<h3>6.<strong>服务器返回 HTTP 响应</strong><br></h3>
+<ul>
+<li>服务器返回<strong>HTTP 响应</strong>，包括状态码（如 200 OK）、响应头（例如内容类型、缓存控制等）和请求的资源数据（例如 HTML、CSS、JS 等）。<br></li>
+</ul>
+<h3>7.<strong>浏览器接收响应并开始解析</strong><br></h3>
+<ul>
+<li>浏览器接收到响应后，开始解析 HTML 文档并逐步构建<strong>DOM 树</strong>。同时，浏览器会发出进一步的请求以获取页面中引用的资源：<br></li>
+<li>如果 HTML 中有外部的 CSS 文件、JS 文件或图片资源等，浏览器会并行发送 HTTP 请求来获取这些资源。<br></li>
+</ul>
+<h3>8.<strong>构建 DOM 和 CSSOM</strong><br></h3>
+<ul>
+<li><strong>DOM 树构建</strong>：浏览器从 HTML 构建文档对象模型（DOM），每个 HTML 标签都会转换成 DOM 树的节点。<br></li>
+<li><strong>CSSOM 构建</strong>：浏览器解析 CSS 文件或内嵌的 CSS 样式，生成 CSSOM（CSS 对象模型）。<br></li>
+</ul>
+<h3>9.<strong>合并 DOM 和 CSSOM，生成渲染树</strong><br></h3>
+<ul>
+<li>当 DOM 和 CSSOM 都构建完成后，浏览器将它们结合在一起，生成<strong>渲染树</strong>。渲染树包含页面的可见元素以及它们的样式信息。<br></li>
+</ul>
+<h3>10.<strong>布局（Layout）</strong><br></h3>
+<ul>
+<li>浏览器根据渲染树进行<strong>布局</strong>，计算每个元素的位置和大小。这一阶段决定了页面元素在屏幕上的确切位置。<br></li>
+</ul>
+<h3>11.<strong>绘制（Painting）</strong><br></h3>
+<ul>
+<li>在完成布局后，浏览器开始<strong>绘制</strong>，将渲染树的每个节点绘制到屏幕上，生成页面的视觉内容。<br></li>
+</ul>
+<h3>12.<strong>JS 执行与事件绑定</strong><br></h3>
+<ul>
+<li>如果页面中包含 JavaScript 文件，浏览器会根据<strong>HTML 的解析顺序</strong>和<strong>脚本位置</strong>决定何时下载并执行 JavaScript：<br></li>
+<li>默认情况下，JavaScript 是<strong>阻塞解析</strong>的，意味着浏览器会暂停 DOM 树的构建，直到脚本执行完毕。<br></li>
+<li>如果脚本被标记为<code>async</code>或<code>defer</code>，则浏览器可以异步加载和执行脚本。<br></li>
+<li>浏览器执行 JavaScript 后，可能会修改 DOM 或 CSSOM，并重新触发布局和绘制。<br></li>
+</ul>
+<h3>13.<strong>页面完全渲染</strong><br></h3>
+<ul>
+<li>当所有资源加载完毕、DOM 构建完成、JS 执行完毕，页面内容会被完整呈现给用户。<br></li>
+</ul>
+<h3>14.<strong>浏览器空闲与后续交互</strong><br></h3>
+<ul>
+<li>页面渲染完成后，浏览器处于等待状态，用户可以进行交互（如点击按钮、输入表单）。任何用户交互事件都会触发 JavaScript 事件监听器，可能引发进一步的页面重绘（Repaint）或重新布局（Reflow）。<br></li>
+</ul>
+<h3><br></h3>
+<p><br></p>
+<h2><span style="color: rgb(17, 124, 238)">【中等】</span>浏览器工作原理<br></h2>
+<p>这部分内容在 MDN 中有详细的解释文档，通过链接直达：<a href="https://developer.mozilla.org/zh-CN/docs/Web/Performance/How_browsers_work">https://developer.mozilla.org/zh-CN/docs/Web/Performance/How_browsers_work</a><br></p>
+<hr>
+<p>以下是简述的内容，可以作为参考：<br></p>
+<p>浏览器的工作原理可以概括为以下几个主要阶段：<br></p>
+<hr>
+<h4><strong>1. 用户输入 URL 后的流程</strong><br></h4>
+<ul>
+<li><strong>DNS 解析</strong>：浏览器将 URL 转换为服务器的 IP 地址。<br></li>
+<li><strong>TCP 连接</strong>：通过三次握手建立与服务器的 TCP 连接。<br></li>
+<li><strong>发送 HTTP 请求</strong>：浏览器向服务器发送 HTTP/HTTPS 请求，携带头部信息和其他必要数据。<br></li>
+<li><strong>接收响应</strong>：服务器返回 HTTP 响应，包括 HTML 文档、CSS、JavaScript 文件等资源。<br></li>
+</ul>
+<hr>
+<h4><strong>2. 解析和渲染流程</strong><br></h4>
+<p>浏览器从接收到 HTML 文档开始，分以下几个步骤：<br></p>
+<ul>
+<li><strong>解析 HTML</strong><br></li>
+<li>浏览器解析 HTML，构建 DOM（Document Object Model）树。<br></li>
+<li><strong>解析 CSS</strong><br></li>
+<li>CSS 文件和嵌入式样式被解析，生成 CSSOM（CSS Object Model）树。<br></li>
+<li><strong>渲染树构建</strong><br></li>
+<li>DOM 和 CSSOM 合并生成渲染树（Render Tree），它只包含可见元素及其样式信息。<br></li>
+<li><strong>布局计算</strong><br></li>
+<li>确定每个元素在页面中的位置和大小。<br></li>
+<li><strong>分层和绘制</strong><br></li>
+<li>将页面分为多个层，每层的绘制命令被记录。<br></li>
+<li><strong>栅格化和合成</strong><br></li>
+<li>将绘制指令转化为位图并上传到 GPU，GPU 将各层合成，最终渲染到屏幕。<br></li>
+</ul>
+<hr>
+<h4><strong>3. JavaScript 执行与事件处理</strong><br></h4>
+<ul>
+<li><strong>解析和执行</strong>：<br></li>
+<li>JavaScript 被下载并传递给 JavaScript 引擎（如 V8）。<br></li>
+<li>代码在单线程的 Event Loop 中运行。<br></li>
+<li><strong>DOM 操作</strong>：<br></li>
+<li>JavaScript 可修改 DOM 和 CSSOM，触发重绘（Repaint）或回流（Reflow）。<br></li>
+<li><strong>事件监听</strong>：<br></li>
+<li>用户交互事件（如点击、输入）通过事件循环处理。<br></li>
+</ul>
+<hr>
+<h4><strong>4. 网络层的作用</strong><br></h4>
+<ul>
+<li><strong>资源加载</strong>：<br></li>
+<li>浏览器通过 HTTP 请求并发加载 CSS、JavaScript、图片等静态资源。<br></li>
+<li><strong>缓存</strong>：<br></li>
+<li>利用浏览器缓存（如内存缓存、磁盘缓存）减少重复请求。<br></li>
+</ul>
+<hr>
+<h4><strong>5. 安全机制</strong><br></h4>
+<ul>
+<li><strong>同源策略</strong>：限制跨域请求，保护用户数据安全。<br></li>
+<li><strong>沙盒机制</strong>：将页面脚本隔离，防止恶意操作系统资源。<br></li>
+</ul>
+<hr>
+<h4><strong>总结</strong><br></h4>
+<p>浏览器通过解析 HTML、CSS、JavaScript，并结合网络请求、渲染、脚本执行等流程，最终将网页呈现给用户<br></p>
+<h2><span style="color: rgb(116, 182, 2)">【简单】</span>为什么会产生跨域？什么是同源策略？<br></h2>
+<p>跨域（Cross-Origin）是指在Web开发中，由于浏览器的同源策略（Same-Origin Policy）限制，一个网页的文档或脚本尝试获取来自不同源（不同域、不同协议、不同端口）的资源时引发的安全问题。跨域问题的存在是为了保护用户的隐私和安全，防止恶意网站滥用用户的数据。<br></p>
+<p><strong>同源策略</strong>（Same-Origin Policy）是一种浏览器安全策略，它定义了浏览器如何限制一个页面中的文档或脚本来自不同源的资源请求。同源策略要求：<br></p>
+<ul>
+<li><strong>协议相同</strong>：请求页面和目标资源的协议必须相同，通常是HTTP或HTTPS。<br></li>
+<li><strong>域名相同</strong>：请求页面和目标资源的主机名（域名）必须相同。<br></li>
+<li><strong>端口相同</strong>：请求页面和目标资源的端口号必须相同。如果未指定端口号，默认为80（HTTP）或443（HTTPS）。<br></li>
+</ul>
+<p>如果以上任何一项不满足，就被视为跨域请求，浏览器会拒绝访问跨域资源，以防止潜在的安全风险。<br></p>
+<p>跨域问题的产生主要有以下原因：<br></p>
+<ul>
+<li><strong>隐私保护</strong>：同源策略有助于保护用户的隐私，防止恶意网站获取用户的敏感数据。<br></li>
+<li><strong>安全性</strong>：同源策略有助于防止跨站请求伪造（CSRF）等攻击，以及阻止网站在未经授权的情况下访问其他网站的数据。<br></li>
+</ul>
+<p>尽管同源策略在安全性方面非常重要，但在某些情况下，Web应用程序需要进行跨域通信。为了实现跨域通信，可以通过以下方式来处理跨域问题：<br></p>
+<ul>
+<li><strong>JSONP</strong>：通过动态创建<code>&lt;script&gt;</code>标签来加载跨域的JSON数据。<br></li>
+<li><strong>CORS</strong>（跨源资源共享）：服务器设置响应头以允许跨域请求。这是一种现代的跨域解决方案。<br></li>
+<li><strong>代理服务器</strong>：在同一域中设置一个代理服务器，用于中转跨域请求。<br></li>
+<li><strong>使用WebSocket</strong>：WebSocket通信不受同源策略的限制。<br></li>
+<li><strong>跨文档消息通信（PostMessage）</strong>：在不同窗口或标签页之间安全地传递信息。<br></li>
+</ul>
+<p>需要根据具体的情况选择适合的跨域解决方案，以确保数据的安全性和可访问性。<br></p>
+<h2><span style="color: rgb(116, 182, 2)">【简单】</span>跨域请求中如何传递 cookie<br></h2>
+<p>在跨域请求中传递 Cookie 数据涉及到一些安全和隐私方面的考虑。跨域请求通常不会自动包含 Cookie 数据，因为浏览器会遵循同源策略（Same-Origin Policy），限制了跨域请求对不同域名的 Cookie 访问。但你可以采取一些措施来在特定情况下传递 Cookie 数据：<br></p>
+<ul>
+<li><strong>设置</strong><code>withCredentials</code><strong>属性</strong>：在发起跨域请求时，你可以设置 XMLHttpRequest 对象或 Fetch API 请求的<code>withCredentials</code>属性为<code>true</code>。这将允许请求包括来自目标域的 Cookie 数据。使用 XMLHttpRequest 示例：<br></li>
+</ul>
+<p>使用<code>axios</code>示例：<br></p>
+<p><br></p>
+<ul>
+<li><strong>服务器设置 CORS 头</strong>：目标服务器需要设置适当的跨域资源共享（CORS）头，以允许来自特定域的跨域请求包括 Cookie 数据。服务器应该在响应头中包括<code>Access-Control-Allow-Credentials: true</code>。示例（Node.js 中使用 Express 框架）：<br></li>
+</ul>
+<p><br></p>
+<ul>
+<li><strong>同源请求</strong>：如果你的前端应用和后端 API 部署在相同的域名下，不需要特别处理跨域问题，Cookie 数据会自动包括在请求中。<br></li>
+</ul>
+<p><br></p>
+<h2><span style="color: rgb(17, 124, 238)">【中等】</span>利用 webpack 和 vite 配合 axios 如何实现 cookie 跨域处理？<br></h2>
+<p>使用 Webpack 和 Vite 配合 Axios 来处理跨域请求并传递 Cookie 需要做一些配置。以下是如何配置和使用 Axios 在这两个工具中实现 Cookie 跨域处理的示例：<br></p>
+<p><strong>Webpack</strong>：<br></p>
+<ul>
+<li>首先，确保你已经安装了 Axios：<br></li>
+<li>在你的 Webpack 项目中，通常你不需要对 Webpack 进行特殊配置，但需要确保你的后端服务器正确设置了 CORS 头，以允许跨域请求并传递 Cookie。<br></li>
+<li>在前端代码中使用 Axios：<br></li>
+</ul>
+<p>确保你的后端 API 允许跨域请求并设置了<code>Access-Control-Allow-Credentials: true</code>。<br></p>
+<p><br></p>
+<p><strong>Vite</strong>：<br></p>
+<ul>
+<li>在 Vite 项目中，你可以通过配置代理来处理跨域请求。首先，确保你已经安装了 Axios：<br></li>
+<li>在 Vite 配置文件中设置代理：<br></li>
+</ul>
+<p>在这里，<code>target</code>指向了你的后端 API 地址。<br></p>
+<ul>
+<li>在前端代码中使用 Axios：<br></li>
+</ul>
+<p><br></p>
+<p>确保你的后端 API 允许跨域请求并设置了<code>Access-Control-Allow-Credentials: true</code>。<br></p>
+<p><br></p>
+<p>总结来说，你需要在 Axios 中设置<code>withCredentials: true</code>来允许携带 Cookie 数据，然后通过配置代理（在 Vite 中）或确保后端正确设置 CORS 头，以允许跨域请求并传递 Cookie 数据。<br></p>
+<p><br></p>
+<h2><span style="color: rgb(116, 182, 2)">【简单】</span>什么是简单请求？什么是复杂请求？<br></h2>
+<p>在跨域请求中，根据请求的类型，请求可以分为两种主要类型：简单请求（Simple Request）和复杂请求（Preflighted Request）。<br></p>
+<h3>简单请求（Simple Request）：<br></h3>
+<p>简单请求是指浏览器直接发出的跨域请求，符合一定的条件，可以不经过预检（Preflight）。<br></p>
+<p>一个请求被视为简单请求，需要满足以下条件：<br></p>
+<ul>
+<li>请求方法是以下之一：GET、HEAD、POST。<br></li>
+<li>请求头（HTTP headers）只包含以下几种字段之一：<br></li>
+<li>Accept<br></li>
+<li>Accept-Language<br></li>
+<li>Content-Language<br></li>
+<li>Last-Event-ID<br></li>
+<li>Content-Type（只允许部分值，如 application/x-www-form-urlencoded、multipart/form-data、text/plain）<br></li>
+</ul>
+<p>如果一个请求满足上述条件，它就被认为是简单请求，浏览器会直接发出该请求，而不需要进行预检。<br></p>
+<p><br></p>
+<h3>复杂请求（Preflighted Request）：<br></h3>
+<p>复杂请求是指不满足简单请求条件的跨域请求。当一个请求不满足简单请求的条件时，浏览器会先发送一个预检请求（Preflight Request），以确定是否服务器允许该请求。<br></p>
+<p>预检请求是一个使用 HTTP 方法<code>OPTIONS</code>的请求，它包含一个<code>Origin</code>头字段，用于指示请求的来源，以及一些其他额外的头字段。服务器接收到预检请求后，会检查是否允许实际请求。如果服务器允许，浏览器随后会发送实际请求。<br></p>
+<p>复杂请求的情况包括但不限于以下情况：<br></p>
+<ul>
+<li>使用非简单请求方法，如 PUT、DELETE 等。<br></li>
+<li>发送自定义请求头。<br></li>
+<li>发送请求的<code>Content-Type</code>头字段为非简单值，例如<code>application/json</code>。<br></li>
+</ul>
+<p>需要注意的是，对于复杂请求，服务器必须在响应中包含适当的跨域头，如<code>Access-Control-Allow-Origin</code>、<code>Access-Control-Allow-Methods</code>和<code>Access-Control-Allow-Headers</code>，以确保请求能够成功完成。<br></p>
+<p>简单请求和复杂请求的区分对于理解跨域请求以及处理跨域问题非常重要，因为它们触发的浏览器行为和服务器端的处理方式有所不同。<br></p>
+<p><br></p>
+<h2><span style="color: rgb(17, 124, 238)">【中等】</span>说一下浏览器的缓存流程<br></h2>
+<p>浏览器缓存的流程涉及到资源的请求、存储和更新，缓存可以根据缓存策略和时间戳来管理。下面是浏览器的缓存流程，以及关于时间戳的说明：<br></p>
+<ul>
+<li><strong>资源请求</strong>：当浏览器加载一个网页时，它会发起对网页中引用的各种资源（如HTML、CSS、JavaScript、图片等）的请求。<br></li>
+<li><strong>缓存检查</strong>：浏览器首先检查是否已经有该资源的本地缓存副本。<br></li>
+<li><strong>缓存命中</strong>：如果资源已经缓存并且仍然有效（未过期），浏览器会使用缓存的副本，而不会发起网络请求，从而提高加载速度。这通常适用于静态资源，如图片、CSS、JavaScript 文件。<br></li>
+<li><strong>过期资源</strong>：如果资源已经缓存但过期了，浏览器会发起资源请求，并附带一个<code>If-Modified-Since</code>或<code>If-None-Match</code>头，以检查是否有更新的版本。<br></li>
+<li><strong>服务器响应</strong>：服务器会检查请求中的条件头（<code>If-Modified-Since</code>或<code>If-None-Match</code>），如果资源没有发生变化，服务器会返回一个<code>304 Not Modified</code>响应，告诉浏览器继续使用缓存的资源。<br></li>
+<li><strong>新资源获取</strong>：如果资源已经过期或有变化，服务器会返回新的资源数据，浏览器会存储并使用这个新的资源。<br></li>
+</ul>
+<p><br></p>
+<h2><span style="color: rgb(17, 124, 238)">【中等】</span>缓存过程中时间戳可以放在哪里？<br></h2>
+<p>时间戳可以放在不同地方，以帮助管理缓存。通常，时间戳可以放在以下位置：<br></p>
+<ul>
+<li><strong>资源URL中的查询参数</strong>：在资源URL中添加时间戳或版本号作为查询参数，例如：<br></li>
+</ul>
+<p>这种做法使浏览器认为资源已发生更改，从而强制刷新缓存。<br></p>
+<ul>
+<li><strong>资源URL中的文件名</strong>：在资源URL的文件名中包含时间戳，例如：<br></li>
+</ul>
+<p>类似于查询参数，这也有助于浏览器识别资源更新。<br></p>
+<ul>
+<li><strong>响应头中的</strong><code>Cache-Control</code><strong>和</strong><code>Expires</code>：通过在服务器响应头中设置<code>Cache-Control</code>和<code>Expires</code>头，可以定义资源的缓存策略。如果资源在过期日期之前没有更改，浏览器将继续使用缓存。<br></li>
+</ul>
+<p><br></p>
+<p>时间戳的使用有助于确保浏览器在资源发生变化时能够更新缓存，从而提供最新的内容。这对于管理缓存非常重要，以便及时提供新版本的资源。<br></p>
+<p><br></p>
+<h2><span style="color: rgb(223, 42, 63)">【困难】</span>平时都怎么做 web 优化？<br></h2>
+<h3><strong>1. 性能优化（Performance Optimization）</strong><br></h3>
+<h4>1.1 资源加载优化<br></h4>
+<ul>
+<li><strong>HTTP/2 提升加载效率</strong>：开启 HTTP/2 协议，利用多路复用功能减少队头阻塞，同时并行加载多个资源。示例：配置 Nginx 使用<code>http2</code>模块：<br></li>
+<li><strong>延迟加载 (Lazy Loading)</strong>：<br></li>
+<li>对图片、视频等大文件使用延迟加载。<br></li>
+<li>示例：使用<code>&lt;img loading=&quot;lazy&quot;&gt;</code>原生支持图片懒加载：<br></li>
+<li>对其他资源使用 Intersection Observer API：<br></li>
+<li><strong>Tree Shaking 和代码分割</strong>：<br></li>
+<li>在 Webpack 中启用 Tree Shaking，剔除未使用的代码：<br></li>
+<li>使用动态导入（Dynamic Import）进行代码分割：<br></li>
+</ul>
+<h4>1.2 缓存机制<br></h4>
+<ul>
+<li><strong>HTTP 缓存</strong>：配置<code>Cache-Control</code>和<code>ETag</code>，避免重复加载静态资源。示例：<br></li>
+<li><strong>Service Worker</strong>：缓存动态资源或接口数据，离线可用：<br></li>
+</ul>
+<h4>1.3 CDN 加速<br></h4>
+<ul>
+<li><strong>静态资源分发</strong>：将静态资源托管到 CDN（如 Cloudflare、阿里云 CDN），减少时延。<br></li>
+<li>示例：为图片资源设置 CDN 地址：<br></li>
+</ul>
+<hr>
+<h3><strong>2. 代码优化（Code Optimization）</strong><br></h3>
+<h4>2.1 减少冗余代码<br></h4>
+<ul>
+<li>删除未使用的 CSS 和 JS：使用工具（如 PurgeCSS）移除无用的样式：<br></li>
+</ul>
+<h4>2.2 DOM 操作优化<br></h4>
+<ul>
+<li>减少频繁的 DOM 操作，使用文档片段或批量更新：<br></li>
+</ul>
+<h4>2.3 使用 Virtual DOM<br></h4>
+<ul>
+<li>如果是 React 项目，可以通过调试工具（如 React Profiler）优化组件重渲染。示例：通过<code>React.memo</code>避免不必要的重新渲染：<br></li>
+</ul>
+<hr>
+<h3><strong>3. 图片优化（Image Optimization）</strong><br></h3>
+<h4>3.1 选择合适的格式<br></h4>
+<ul>
+<li>优先使用现代格式：<br></li>
+<li><code>WebP</code>（大幅减少体积，支持大部分现代浏览器）。<br></li>
+<li><code>AVIF</code>（比 WebP 压缩率更高）。示例：<br></li>
+</ul>
+<h4>3.2 图片懒加载与压缩<br></h4>
+<ul>
+<li>利用工具（如 ImageMagick 或 TinyPNG）对图片进行预压缩。<br></li>
+<li>对于大图片，使用<code>srcset</code>提供多分辨率选择：<br></li>
+</ul>
+<hr>
+<h3><strong>4. 网络优化（Network Optimization）</strong><br></h3>
+<h4>4.1 合并与压缩资源<br></h4>
+<ul>
+<li>合并小文件，减少 HTTP 请求数。<br></li>
+<li>使用 Webpack 开启资源压缩：<br></li>
+</ul>
+<h4>4.2 DNS Prefetch 和 Preload<br></h4>
+<ul>
+<li>提前解析第三方资源的域名：<br></li>
+<li>提前加载关键资源：<br></li>
+</ul>
+<hr>
+<h3><strong>5. SEO 与可访问性优化</strong><br></h3>
+<h4>5.1 页面结构语义化<br></h4>
+<ul>
+<li>确保标题标签（<code>&lt;h1&gt;</code>~<code>&lt;h6&gt;</code>）、列表（<code>&lt;ul&gt;</code>/<code>&lt;ol&gt;</code>）合理使用，增强爬虫友好性。<br></li>
+</ul>
+<h4>5.2 Meta 标签优化<br></h4>
+<ul>
+<li>设置适合的<code>viewport</code>配置：<br></li>
+<li>添加描述和关键词：<br></li>
+</ul>
+<hr>
+<h3><strong>6. 监控与诊断（Monitoring and Diagnostics）</strong><br></h3>
+<h4>6.1 性能测试工具<br></h4>
+<ul>
+<li>使用 Lighthouse 或 WebPageTest 检测性能指标：<br></li>
+<li><strong>LCP</strong>（Largest Contentful Paint）：确保关键内容在 2.5 秒内加载。<br></li>
+<li><strong>FCP</strong>（First Contentful Paint）：优化首屏渲染速度。<br></li>
+</ul>
+<h4>6.2 前端监控接入<br></h4>
+<ul>
+<li>接入 Sentry 进行错误日志监控。<br></li>
+<li>利用 Performance API 收集性能指标：<br></li>
+</ul>
+<hr>
+<h3><strong>总结答题逻辑</strong><br></h3>
+<ul>
+<li>以实际案例开场：比如“我们在某项目中遇到了页面加载慢的问题，优化后首屏时间从 5 秒缩短到 2 秒。”<br></li>
+<li>从资源加载、代码优化、图片优化、网络优化等方面逐条阐述。<br></li>
+<li>强调监控和数据驱动优化的结果，说明实践经验。<br></li>
+</ul>
+<p><br></p>
+<h2><span style="color: rgb(17, 124, 238)">【中等】</span>CDN 的原理是什么？<br></h2>
+<p>内容分发网络（CDN，Content Delivery Network）是一种通过将内容缓存到多个地理位置分散的服务器上来优化内容交付速度和可靠性的方法。CDN 的主要原理和工作机制如下：<br></p>
+<h3>1.<strong>分布式服务器</strong><br></h3>
+<p>CDN 由多个地理上分布的服务器组成，这些服务器被称为节点。每个节点可以缓存内容的副本。通过将内容分布在不同的位置，CDN 可以确保用户请求得到快速响应，因为请求可以由距离最近的节点处理。<br></p>
+<h3>2.<strong>内容缓存</strong><br></h3>
+<p>当用户请求某个内容时，CDN 会首先检查距离最近的节点是否已经缓存了该内容。如果缓存中存在，节点会直接将内容发送给用户，这减少了从原始服务器获取内容的延迟。缓存策略通常基于内容的类型和访问频率来确定缓存的存储时间。<br></p>
+<h3>3.<strong>负载均衡</strong><br></h3>
+<p>CDN 使用负载均衡技术在多个服务器之间分配用户请求。这不仅提高了性能和响应速度，还减少了单个服务器的负载，防止服务器过载或宕机。<br></p>
+<h3>4.<strong>地理定位</strong><br></h3>
+<p>CDN 利用地理定位技术确定用户的地理位置，并将用户的请求定向到离他们最近的服务器节点。这种方式可以显著减少网络延迟，提高内容传输速度。<br></p>
+<h3>5.<strong>动态内容加速</strong><br></h3>
+<p>对于动态生成的内容，CDN 也能提供加速服务。虽然动态内容不能像静态内容那样直接缓存，但 CDN 可以通过优化路径、协议（如 HTTP/2）和压缩技术来减少传输时间。<br></p>
+<h3>6.<strong>安全性</strong><br></h3>
+<p>CDN 提供额外的安全层，包括 DDoS 保护、WAF（Web 应用防火墙）和 SSL/TLS 加密。CDN 节点能够检测并拦截恶意流量，保护原始服务器不受攻击。<br></p>
+<h3>7.<strong>内容预取和更新</strong><br></h3>
+<p>CDN 能够根据用户的访问模式预先获取和缓存内容。同时，当内容更新时，CDN 也会同步更新缓存，确保用户获取到最新的内容。<br></p>
+<p><br></p>
+<h2><span style="color: rgb(17, 124, 238)">【中等】</span>DNS 如何查询域名的<br></h2>
+<p>DNS（域名系统）是一个用于将域名（例如，www.example.com）转换为 IP 地址的分布式数据库系统。DNS 查询是通过一系列步骤来完成的，通常涉及到本地 DNS 服务器、根域名服务器、顶级域名服务器和授权域名服务器。以下是 DNS 查询的基本过程：<br></p>
+<ul>
+<li><strong>本地 DNS 查询</strong>：当用户在浏览器中输入一个域名（例如，www.example.com）时，首先会进行本地 DNS 查询。本地计算机或网络路由器上保存着一个本地 DNS 缓存，它包含了最近查询过的域名和其对应的 IP 地址。如果所需的域名在本地缓存中已经存在，查询就会立即结束。<br></li>
+<li><strong>根域名服务器查询</strong>：如果域名不在本地缓存中，本地 DNS 服务器会向根域名服务器发出查询请求。根域名服务器是全球 DNS 层次结构的最高级别，负责维护顶级域名服务器（如.com、.org、.net 等）的地址。根域名服务器不存储域名与 IP 地址的映射，但它会告诉本地 DNS 服务器如何找到顶级域名服务器。<br></li>
+<li><strong>顶级域名服务器查询</strong>：本地 DNS 服务器根据根域名服务器的响应，向顶级域名服务器发送查询请求，以确定域名的顶级域名服务器。例如，对于 www.example.com，本地 DNS 服务器会查询.com 顶级域名服务器。顶级域名服务器会提供指向下一个级别的域名服务器（授权域名服务器）的信息。<br></li>
+<li><strong>授权域名服务器查询</strong>：本地 DNS 服务器继续查询指向的授权域名服务器，以获取域名的实际 IP 地址。授权域名服务器通常由域名的拥有者或注册商维护。它包含了与特定域名相关的 IP 地址信息。<br></li>
+<li><strong>解析响应</strong>：一旦本地 DNS 服务器获得了域名的实际 IP 地址，它将响应返回给用户的计算机或设备。用户的计算机将使用这个 IP 地址来建立连接并加载网站或资源。<br></li>
+<li><strong>本地缓存更新</strong>：本地 DNS 服务器会将查询的结果缓存起来，以便下次查询相同域名时能够更快地获取响应。<br></li>
+</ul>
+<p>这是 DNS 查询的基本过程。DNS 的分布式结构和缓存机制有助于减少对根域名服务器和顶级域名服务器的负载，并提高域名解析的效率。 DNS 是互联网的关键基础设施，它使我们能够使用易记的域名来访问互联网上的各种资源。<br></p>
+<p><br></p>
+<h2><span style="color: rgb(17, 124, 238)">【中等】</span>XSS、CSRF 攻击的原理以及防御手段<br></h2>
+<p><strong>XSS（跨站脚本攻击）攻击原理：</strong><br></p>
+<p>XSS 攻击是一种常见的 Web 攻击，其原理是攻击者向网页中插入恶意脚本代码，使用户的浏览器执行这些脚本，从而达到攻击的目的。XSS 攻击通常分为以下几种类型：<br></p>
+<ul>
+<li><strong>存储型 XSS</strong>：攻击者将恶意脚本存储在服务器上，当用户访问包含这些脚本的页面时，脚本被执行。<br></li>
+<li><strong>反射型 XSS</strong>：攻击者将恶意脚本作为参数包含在URL中，当用户点击包含恶意脚本的链接时，脚本被执行。<br></li>
+<li><strong>DOM 型 XSS</strong>：攻击者利用浏览器的 DOM 操作，动态修改页面内容，插入恶意脚本，然后用户浏览器执行这些脚本。<br></li>
+</ul>
+<p><strong>XSS 防御手段：</strong><br></p>
+<ul>
+<li><strong>输入验证</strong>：对用户输入的数据进行验证和过滤，不信任的数据应该被拒绝或编码，以防止恶意脚本的注入。<br></li>
+<li><strong>输出编码</strong>：在将用户输入的数据输出到页面时，对数据进行合适的编码，以确保浏览器将其视为纯文本而不是可执行的脚本。<br></li>
+<li><strong>CSP（内容安全策略）</strong>：CSP 是一种 HTTP 头，它允许网站管理员指定哪些资源可以加载和执行，以限制恶意脚本的来源。<br></li>
+<li><strong>HttpOnly 和 Secure Cookie 标志</strong>：使用<code>HttpOnly</code>标志将 cookie 标记为仅通过 HTTP 访问，使用<code>Secure</code>标志强制使用 HTTPS 连接，从而减少 XSS 攻击的风险。<br></li>
+<li><strong>X-XSS-Protection 头</strong>：浏览器可以通过<code>X-XSS-Protection</code>HTTP 头来启用内置的反射型和存储型 XSS 攻击检测和防御。<br></li>
+</ul>
+<p><strong>CSRF（跨站请求伪造）攻击原理：</strong><br></p>
+<p>CSRF 攻击是一种攻击方式，利用用户已登录的身份，以用户不知情的情况下，伪造用户的请求，执行一些非法操作。攻击者通常在受信任的网站上放置恶意链接或图像，当用户访问这些网站时，他们的登录凭证会被用于发起非授权的操作。<br></p>
+<p><strong>CSRF 防御手段：</strong><br></p>
+<ul>
+<li><strong>CSRF Token</strong>：为每个用户生成一个唯一的 CSRF 令牌，并将该令牌与用户的会话关联。在每个请求中，包括表单提交，都需要包含这个令牌。服务器在接收请求时验证令牌，如果不匹配，则拒绝请求。<br></li>
+<li><strong>SameSite Cookie 属性</strong>：通过设置<code>SameSite</code>属性为<code>&quot;Strict&quot;</code>或<code>&quot;Lax&quot;</code>来减少 CSRF 攻击的风险。这可以限制跨站点 Cookie 的发送，从而减少攻击者的机会。<br></li>
+<li><strong>检查 Referer 头</strong>：服务器可以检查请求中的<code>Referer</code>头来确保请求来自合法来源。<br></li>
+<li><strong>双重提交 Cookie</strong>：将 CSRF 令牌存储在一个 cookie 中，同时也将它包含在请求的头部中。服务器会验证这两个值是否匹配，从而确定请求是否合法。<br></li>
+<li><strong>限制敏感操作</strong>：对于敏感操作（如修改密码、更改邮箱地址等），需要用户进行额外的身份验证，例如输入密码或提供其他凭证。<br></li>
+<li><strong>及时退出登录</strong>：用户应定期退出登录，以降低攻击者滥用用户凭证的机会。<br></li>
+</ul>
+<p>以上是一些常见的防御手段，它们可以单独或组合使用，以减少 XSS 和 CSRF 攻击的风险。不同的应用可能需要采用不同的防御措施，具体的安全策略应根据应用的特定需求来制定。<br></p>
+<p><br></p>
+<h2><span style="color: rgb(17, 124, 238)">【中等】</span>PWA 是什么？有什么作用？<br></h2>
+<p>PWA（渐进式 Web 应用）是一种具有先进功能的网页应用程序，旨在提供更好的用户体验，包括离线访问、快速加载速度和本机应用般的交互性。PWA 的主要特点和作用如下：<br></p>
+<p>主要特点：<br></p>
+<ul>
+<li><strong>离线访问（Offline Access）</strong>：PWA 允许用户在没有网络连接的情况下访问应用，通过使用服务工作线程（Service Workers）缓存应用所需的资源，以便离线使用。<br></li>
+<li><strong>快速加载速度（Fast Loading）</strong>：PWA 的资源可以被缓存，因此应用可以更快地加载，提供更好的性能和用户体验。<br></li>
+<li><strong>本机应用体验（Native App-like Experience）</strong>：PWA 可以提供类似本机应用的体验，包括添加到主屏幕、推送通知、本机导航和无干扰全屏等功能。<br></li>
+<li><strong>安全性（Security）</strong>：PWA 通过 HTTPS 提供安全的通信，保护用户数据和隐私。<br></li>
+<li><strong>跨平台兼容性（Cross-platform Compatibility）</strong>：PWA 可以在不同的平台和浏览器上运行，减少了开发和维护的复杂性。<br></li>
+<li><strong>自动更新（Automatic Updates）</strong>：PWA 可以自动更新，无需用户手动更新应用。<br></li>
+</ul>
+<p>主要作用：<br></p>
+<ul>
+<li><strong>提高用户体验</strong>：PWA 提供更快的加载速度和离线访问功能，提高了用户体验，尤其在网络条件较差或不稳定的情况下。<br></li>
+<li><strong>增加用户参与度</strong>：通过推送通知功能，PWA 可以吸引用户返回应用，提高用户参与度和留存率。<br></li>
+<li><strong>降低开发成本</strong>：PWA 可以跨平台运行，减少了针对不同平台的开发和维护成本。<br></li>
+<li><strong>提高安全性</strong>：PWA 通过 HTTPS 加密通信，提供更高的安全性，保护用户数据和隐私。<br></li>
+<li><strong>提高可访问性</strong>：PWA 的本机应用般的交互性和用户友好性提高了可访问性，吸引更多的用户。<br></li>
+<li><strong>自动更新</strong>：PWA 可以自动更新，确保用户使用的始终是最新版本，提高了应用的稳定性和安全性。<br></li>
+</ul>
+<p>PWA 技术正在广泛应用于 Web 开发，帮助开发者提供更出色的用户体验，增加用户参与度，并减少了跨平台开发的复杂性。它已经在许多在线服务和应用中得到了成功的应用。<br></p>
+<p><code>MDN</code>中对<code>PWA</code>的应用有<a href="https://developer.mozilla.org/zh-CN/docs/Web/Progressive_web_apps">详细的介绍</a><br></p>
+<p><br></p>
+<h2><span style="color: rgb(223, 42, 63)">【困难】</span>对 Web Worker 有了解吗？什么是 Web Worker，它的应用场景是什么？<br></h2>
+<p><strong>Web Worker</strong>是 HTML5 引入的一项技术，它允许在后台线程中执行 JavaScript 代码，而不会阻塞主线程（UI 线程）。Web Worker 可以在独立的线程中执行计算密集型任务，从而提高 web 应用的性能和响应速度。<br></p>
+<p>Web Worker 的主要特点包括：<br></p>
+<ul>
+<li><strong>并行计算</strong>：Web Worker 允许在后台线程中并行执行代码，不会阻塞主线程的执行，因此不会导致页面冻结或卡顿。<br></li>
+<li><strong>独立的全局对象</strong>：每个 Web Worker 都有自己独立的全局对象，与主线程的全局对象分离。这意味着它们不共享相同的数据和变量。<br></li>
+<li><strong>受限的访问</strong>：Web Worker 不能访问 DOM 元素，浏览器窗口对象，或执行同步 XMLHttpRequest 请求等。这是出于安全性和可靠性的考虑。<br></li>
+<li><strong>通信机制</strong>：主线程和 Web Worker 之间可以通过消息传递进行通信。主线程可以向 Web Worker 发送消息，而 Web Worker 也可以向主线程发送消息。<br></li>
+</ul>
+<p>应用场景：<br></p>
+<ul>
+<li><strong>计算密集型任务</strong>：Web Worker 最常用的场景是执行计算密集型任务，如图像处理、数据计算、密码学等。通过将这些任务移至后台线程，可以提高网页性能，保持响应速度。<br></li>
+<li><strong>长时间运行的任务</strong>：长时间运行的任务，如后台数据同步、文件解析、数据转换等，可以放在 Web Worker 中，以避免阻塞用户界面。<br></li>
+<li><strong>多线程并行处理</strong>：当需要同时处理多个任务时，可以创建多个 Web Worker 实例以实现并行处理。<br></li>
+<li><strong>网络请求</strong>：虽然 Web Worker 不能执行同步 XMLHttpRequest 请求，但可以用于执行异步网络请求，以避免阻塞主线程。<br></li>
+<li><strong>游戏开发</strong>：在游戏开发中，Web Worker 可以用于执行游戏逻辑、物理引擎等任务，从而提高游戏性能。<br></li>
+</ul>
+<p>总之，Web Worker 是一项强大的技术，用于处理多线程编程任务，可以提高 web 应用的性能和用户体验，特别是在执行计算密集型或长时间运行的任务时非常有用。<br></p>
+<p>Web Worker 的应用其实是比较复杂的，详细可以看<code>MDN</code>中对<code>Web Worker</code>的<a href="https://developer.mozilla.org/zh-CN/docs/Web/API/Web_Workers_API/Using_web_workers">介绍</a>，但是正常面试中。以上答案基本上就可以了。<br></p>
+<p><br></p>
+<h2><span style="color: rgb(116, 182, 2)">【简单】</span>HTTP 请求常见状态码都有什么？<br></h2>
+<p>HTTP（Hypertext Transfer Protocol）是一种用于在网络上传输数据的协议，常见的状态码用于指示请求的结果。以下是HTTP常见的状态码及其含义：<br></p>
+<p>1xx（信息性状态码）：请求正在处理<br></p>
+<ul>
+<li>100 Continue: 服务器已接收到请求的初始部分，客户端应该继续发送其余部分。<br></li>
+<li>101 Switching Protocols: 服务器已经理解客户端的请求，将通过升级协议的方式来响应。<br></li>
+</ul>
+<p>2xx（成功状态码）：请求成功处理<br></p>
+<ul>
+<li>200 OK: 请求已成功，服务器返回了请求的数据。<br></li>
+<li>201 Created: 请求已成功，并且服务器创建了新的资源。<br></li>
+<li>204 No Content: 请求已成功，但服务器没有返回任何内容。<br></li>
+</ul>
+<p>3xx（重定向状态码）：需要进行额外的操作以完成请求<br></p>
+<ul>
+<li>301 Moved Permanently: 请求的资源已经永久移动到新的位置。<br></li>
+<li>302 Found (或者307 Temporary Redirect): 请求的资源临时移动到新的位置。<br></li>
+<li>304 Not Modified: 客户端可以使用缓存的版本，因为资源未发生更改。<br></li>
+</ul>
+<p>4xx（客户端错误状态码）：请求包含错误或无法完成<br></p>
+<ul>
+<li>400 Bad Request: 请求无效，服务器不理解或无法处理。<br></li>
+<li>401 Unauthorized: 请求需要认证或身份验证。<br></li>
+<li>403 Forbidden: 服务器拒绝请求，客户端没有权限访问资源。<br></li>
+<li>404 Not Found: 请求的资源未找到。<br></li>
+</ul>
+<p>5xx（服务器错误状态码）：服务器无法完成有效请求<br></p>
+<ul>
+<li>500 Internal Server Error: 服务器遇到内部错误，无法完成请求。<br></li>
+<li>502 Bad Gateway: 服务器充当网关或代理，从上游服务器接收到无效响应。<br></li>
+<li>503 Service Unavailable: 服务器当前不可用，通常是临时性的。<br></li>
+<li>504 Gateway Timeout: 服务器充当网关或代理，但没有及时接收到来自上游服务器的响应。<br></li>
+</ul>
+<p><br></p>
+<p>这些是HTTP中最常见的状态码，还有其他一些少见的状态码用于特定的情况。不同的状态码提供了关于请求处理结果的信息，帮助客户端和开发人员更好地理解和处理HTTP请求和响应。<br></p>
+<p><br></p>
+<h2><span style="color: rgb(17, 124, 238)">【中等】</span>简述 http 的缓存机制<br></h2>
+<p>HTTP缓存是一种用于减少网络流量和提高网站性能的重要技术。HTTP缓存可以分为两种主要类型：强制缓存和协商缓存。它们的区别在于缓存策略和服务器与客户端之间的交互方式。<br></p>
+<ul>
+<li>强制缓存：<br></li>
+<li>强制缓存是通过设置响应头来控制的，通常使用<code>Cache-Control</code>和<code>Expires</code>头。<br></li>
+<li><code>Cache-Control</code>头中的<code>max-age</code>指定了资源在客户端缓存中的有效时间（秒），例如：<code>Cache-Control: max-age=3600</code>表示资源在客户端缓存中有效期为1小时。<br></li>
+<li><code>Expires</code>头是一个过时的方法，它指定了资源的过期日期，客户端将根据这个日期来判断资源是否过期。<br></li>
+<li>当资源被强制缓存，客户端在下次请求该资源时，会首先检查缓存中的有效期，如果资源尚未过期，客户端将直接从缓存中加载资源，而不向服务器发送请求。<br></li>
+<li>强制缓存通常用于不经常更改的静态资源，它可以减少服务器的负载并加快页面加载速度。<br></li>
+<li>协商缓存（<code>304</code>）：<br></li>
+<li>协商缓存是通过使用请求头来控制的，通常使用<code>If-Modified-Since</code>和<code>If-None-Match</code>等请求头。<br></li>
+<li>当客户端向服务器请求资源时，它会发送先前缓存的资源的元信息，如最后修改时间（<code>If-Modified-Since</code>）或资源的标识符（<code>If-None-Match</code>）。<br></li>
+<li>服务器会根据这些信息判断资源是否发生了变化，如果资源未发生变化，服务器会返回一个<code>304 Not Modified</code>响应，告诉客户端可以继续使用缓存中的资源。<br></li>
+<li>如果资源已经发生了变化，服务器会返回新的资源，并将其缓存，客户端会更新缓存并使用新的资源。<br></li>
+<li>协商缓存通常用于动态或频繁更改的内容，它减少了不必要的网络传输，但需要服务器进行额外的计算以判断资源是否已更改。<br></li>
+</ul>
+<p>综上所述，强制缓存是通过设置响应头来告诉客户端在一定时间内直接使用缓存，而协商缓存是通过比较请求头中的信息来判断资源是否需要重新加载。通常，强制缓存优先级较高，如果资源被强制缓存，将不会进行协商缓存的检查。如果强制缓存失效，才会进行协商缓存的判断。这两种缓存策略可以结合使用，以提高性能并减少服务器负载。<br></p>
+<p><br></p>
+<h2><span style="color: rgb(17, 124, 238)">【中等】</span>HTTP 与 HTTPS 的区别？<br></h2>
+<p>HTTP（Hypertext Transfer Protocol）和HTTPS（Hypertext Transfer Protocol Secure）都是用于在客户端和服务器之间传输数据的协议，但它们之间存在重要的区别，主要涉及到安全性和数据传输的方式：<br></p>
+<ul>
+<li>安全性：<br></li>
+<li>HTTP：HTTP是一种不安全的协议，数据在传输过程中以明文形式传递，容易受到中间人攻击，例如窃听或篡改数据。<br></li>
+<li>HTTPS：HTTPS通过使用SSL/TLS协议来加密数据传输，使数据在传输过程中被加密，从而提供了更高的安全性。这有助于防止窃听、数据篡改和身份验证等攻击。<br></li>
+<li>端口号：<br></li>
+<li>HTTP：默认使用端口80来传输数据。<br></li>
+<li>HTTPS：默认使用端口443来传输数据。<br></li>
+<li>URL前缀：<br></li>
+<li>HTTP：URL以&quot;http://&quot;开头。<br></li>
+<li>HTTPS：URL以&quot;https://&quot;开头。<br></li>
+<li>证书和身份验证：<br></li>
+<li>HTTP：不提供身份验证机制，因此无法验证服务器的真实性。<br></li>
+<li>HTTPS：通过使用数字证书，服务器可以验证其身份，从而确保客户端连接到正确的服务器。这有助于防止中间人攻击。<br></li>
+<li>加密：<br></li>
+<li>HTTP：数据在传输过程中未加密，容易受到窃听。<br></li>
+<li>HTTPS：数据在传输过程中被加密，只有客户端和服务器能够解密和理解数据。<br></li>
+<li>SEO和排名：<br></li>
+<li>搜索引擎（如Google）通常更喜欢HTTPS网站，因此使用HTTPS有助于提高网站的搜索引擎排名。<br></li>
+</ul>
+<p>总之，HTTPS是HTTP的安全版本，通过数据加密和身份验证提供了更高的安全性。在今天的互联网环境中，为了保护敏感信息和用户隐私，使用HTTPS是非常重要的，特别是对于涉及到用户数据的网站和在线交易的网站。因此，许多网站都已经切换到了HTTPS，以提供更安全的用户体验。<br></p>
+<h2><span style="color: rgb(17, 124, 238)">【中等】</span>HTTP 1.1 、HTTP 2 、HTTP 3 的区别<br></h2>
+<p>请注意，HTTP/1.1、HTTP/2和HTTP/3是HTTP协议的不同版本，而HTTPS是HTTP协议的安全版本。HTTPS可以用于加密HTTP/1.1、HTTP/2和HTTP/3的通信。让我解释它们之间的关系和区别：<br></p>
+<ul>
+<li>HTTP/1.1：<br></li>
+<li>HTTP/1.1是HTTP协议的第一个广泛部署的版本，它于1999年发布。<br></li>
+<li>它采用明文传输，不提供数据加密和安全性。<br></li>
+<li>对于每个请求，通常需要建立一个新的TCP连接，这可能会导致性能问题，因为TCP连接的建立和拆除需要时间。<br></li>
+<li>HTTP/1.1引入了持久连接（Keep-Alive）来减少建立新连接的开销，但仍然存在性能问题。<br></li>
+<li>HTTP/2：<br></li>
+<li>HTTP/2于2015年发布，是HTTP/1.1的后续版本。<br></li>
+<li>HTTP/2引入了多路复用，允许多个请求和响应同时在单个连接上传输，减少了延迟。<br></li>
+<li>它采用二进制传输，以减少头部大小，从而提高效率。<br></li>
+<li>HTTP/2支持服务器推送，服务器可以预加载资源，从而提高性能。<br></li>
+<li>HTTP/2是一种相对较新的协议，但已经被广泛采用。<br></li>
+<li>HTTP/3：<br></li>
+<li>HTTP/3是HTTP协议的最新版本，于2020年发布。<br></li>
+<li>HTTP/3采用了QUIC协议作为底层传输协议，取代了TCP，以减少延迟和提高性能。<br></li>
+<li>它继承了HTTP/2的多路复用和头部压缩等特性，同时具有更好的性能。<br></li>
+<li>HTTP/3的一个重要特点是零RTT连接，允许客户端在第一次连接时发送请求，而无需等待握手完成，从而进一步减少延迟。<br></li>
+</ul>
+<p>总结：HTTP/1.1、HTTP/2和HTTP/3是不同版本的HTTP协议，它们都可以使用HTTPS来加密通信。HTTP/2和HTTP/3引入了许多性能改进，特别是在多路复用和降低延迟方面。HTTPS协议用于在这些HTTP版本上提供数据加密和安全性。因此，对于保护数据和提高性能，推荐使用HTTPS，并使用最新的HTTP版本，如HTTP/2或HTTP/3。<br></p>
+<p><br></p>
+<h2><span style="color: rgb(223, 42, 63)">【困难】</span>HTTPS 的加密方式是什么？为什么会是安全的？<br></h2>
+<p>HTTPS使用了多种加密技术来保护数据的机密性和完整性，使通信过程更加安全。其中最常见的加密方式是基于公钥加密和对称密钥加密的结合，通常使用SSL（Secure Sockets Layer）或其继任者TLS（Transport Layer Security）协议来实现。<br></p>
+<p>以下是HTTPS的主要加密方式及其工作原理：<br></p>
+<ul>
+<li><strong>公钥加密（非对称加密）</strong>：<br></li>
+<li>HTTPS通信的开始阶段，服务器会向客户端提供公钥，客户端使用公钥加密将其数据发送给服务器。<br></li>
+<li>公钥加密是一种非对称加密，意味着数据用公钥加密后，只有对应的私钥才能解密它。<br></li>
+<li>这意味着即使攻击者拦截了数据传输，也无法轻易解密数据。<br></li>
+<li><strong>对称加密</strong>：<br></li>
+<li>一旦安全连接建立，客户端和服务器之间会协商生成一个对称密钥。<br></li>
+<li>对称加密使用相同的密钥来加密和解密数据，因此更快速而高效。<br></li>
+<li>对称加密用于实际的数据传输，因为非对称加密通常比较慢。<br></li>
+<li><strong>完整性保护</strong>：<br></li>
+<li>数据在传输过程中还会通过哈希函数等机制来计算校验和（数字签名）以保证数据的完整性。如果数据在传输过程中被篡改，校验和将不匹配，从而警告双方。<br></li>
+<li><strong>数字证书</strong>：<br></li>
+<li>服务器使用数字证书来证明其身份。数字证书包含服务器的公钥以及相关信息，由受信任的证书颁发机构（CA）签名，以确保服务器的真实性。<br></li>
+<li>客户端可以验证证书的签名，确保它是由受信任的CA颁发的。这有助于防止中间人攻击。<br></li>
+</ul>
+<p>为什么HTTPS是安全的：<br></p>
+<ul>
+<li><strong>数据加密</strong>：HTTPS使用非对称和对称加密来保护数据机密性。即使攻击者截获了数据，也无法轻松解密。<br></li>
+<li><strong>完整性保护</strong>：HTTPS通过校验和等机制来确保数据的完整性。如果数据被篡改，双方会察觉到。<br></li>
+<li><strong>身份验证</strong>：HTTPS使用数字证书来验证服务器的身份，确保用户连接到正确的服务器，而不是中间人。<br></li>
+<li><strong>受信任的证书颁发机构</strong>：浏览器内置了受信任的CA根证书，以验证服务器的数字证书。这减少了中间人攻击的风险。<br></li>
+</ul>
+<p>总之，HTTPS的安全性基于其加密和身份验证机制，确保数据在传输过程中保持机密、完整和可信。这使得HTTPS成为保护用户隐私和防止数据被篡改的重要工具，特别是在互联网上进行敏感交易和数据传输时。<br></p>
+<h2><span style="color: rgb(223, 42, 63)">【困难】</span>对称加密和非对称加密的区别<br></h2>
+<p>对称加密和非对称加密是两种常见的加密技术，它们在数据加密和解密过程中的工作方式和原理有很大的区别。以下是它们的区别以及一些实现方案：<br></p>
+<ul>
+<li><strong>对称加密</strong>：<br></li>
+<li><strong>工作方式</strong>：在对称加密中，相同的密钥用于加密和解密数据。这意味着发送者和接收者都必须知道并使用相同的密钥来加密和解密通信中的数据。<br></li>
+<li><strong>速度</strong>：对称加密通常比非对称加密快，因为加密和解密使用相同的密钥。<br></li>
+<li><strong>安全性</strong>：对称加密相对来说更容易受到中间人攻击的威胁，因为发送方和接收方都必须共享相同的密钥，并且如果密钥被泄漏，通信将不再安全。<br></li>
+<li><strong>实现方案</strong>：常见的对称加密算法包括DES（Data Encryption Standard）、3DES、AES（Advanced Encryption Standard）和RC4等。<br></li>
+<li><strong>非对称加密</strong>：<br></li>
+<li><strong>工作方式</strong>：在非对称加密中，有两个密钥，一个是公钥，另一个是私钥。公钥用于加密数据，私钥用于解密数据。发送方知道接收方的公钥，但不知道私钥。<br></li>
+<li><strong>速度</strong>：非对称加密通常比对称加密慢，因为使用不同的密钥进行加密和解密。<br></li>
+<li><strong>安全性</strong>：非对称加密提供更高的安全性，因为即使公钥泄漏，攻击者仍然需要私钥来解密数据。<br></li>
+<li><strong>实现方案</strong>：常见的非对称加密算法包括RSA、DSA、ECC（椭圆曲线加密）等。<br></li>
+</ul>
+<p>需要注意的是，通常非对称加密用于在安全通信的初始阶段建立对称密钥，然后双方继续使用对称加密来加密和解密实际的通信数据。这种方式兼顾了安全性和性能。<br></p>
+<h3>实现方式<br></h3>
+<p>在JavaScript中，你可以使用现成的加密库来实现对称加密和非对称加密。以下是使用Node.js环境中的<code>crypto</code>模块来演示如何进行对称加密和非对称加密的简单示例：<br></p>
+<p><strong>对称加密（使用AES算法）：</strong><br></p>
+<p><strong>非对称加密（使用RSA算法）：</strong><br></p>
+<p>在实际应用中，确保安全存储私钥和公钥非常重要，以保护数据的安全性。这些示例只是演示如何使用Node.js的<code>crypto</code>模块进行对称和非对称加密的简单示例，实际使用中可能需要更多的安全措施和处理。<br></p>
+<p><br></p>
+<h2><span style="color: rgb(17, 124, 238)">【中等】</span><span style="color: var(--juejin-font-1)">什么是强缓存、协商缓存？</span><br></h2>
+<p>整个介绍比较详细，主要是因为强缓存和协商缓存不太好理解，面试的时候简单回答即可详细回答：<a href="https://limeii.github.io/2018/11/web-cache/">https://limeii.github.io/2018/11/web-cache/</a><br></p>
+<p>协在Web开发中，缓存是一种用于提高资源加载速度、减少服务器负载的方法。强缓存和协商缓存是两种常见的HTTP缓存机制，它们的工作方式和使用场景有所不同。<br></p>
+<h3>强缓存（Strong Caching）<br></h3>
+<p>强缓存允许浏览器直接从本地缓存中读取资源，而不向服务器发送请求。强缓存通过HTTP头中的<code>Cache-Control</code>和<code>Expires</code>字段来控制。<br></p>
+<ul>
+<li><strong>Cache-Control</strong>: 这是HTTP/1.1引入的头字段，支持多种指令，例如：<br></li>
+<li><code>max-age</code>: 指定资源被缓存的最长时间（以秒为单位）。<br></li>
+<li><code>public</code>: 指示响应可以被任何缓存存储，包括CDN缓存。<br></li>
+<li><code>private</code>: 指示响应只能被浏览器缓存。<br></li>
+<li><code>no-cache</code>: 强制浏览器每次都向服务器发送请求进行验证。<br></li>
+<li><code>no-store</code>: 禁止缓存，所有请求和响应都不会被缓存。<br></li>
+<li><strong>Expires</strong>: 这是HTTP/1.0使用的头字段，用于指定资源的过期时间点。这个时间点是一个具体的日期和时间。例如：<code>Expires: Tue, 19 Jan 2021 20:00:00 GMT</code>。如果<code>Cache-Control</code>头字段也存在，<code>Expires</code>将被忽略。<br></li>
+</ul>
+<p><strong>例子：</strong><br></p>
+<p><br></p>
+<p>在资源的有效期内（<code>max-age</code>或<code>Expires</code>指定的时间内），浏览器会直接从本地缓存中读取资源，而不再向服务器发送请求。<br></p>
+<h3>协商缓存（Negotiated Caching）<br></h3>
+<p>协商缓存是在缓存过期或者缓存策略要求验证时，浏览器向服务器发送请求，服务器根据请求头中的某些字段决定资源是否发生了变化。如果资源没有变化，服务器返回304 Not Modified状态码，并且浏览器继续使用本地缓存的资源。<br></p>
+<p>协商缓存使用以下HTTP头字段：<br></p>
+<ul>
+<li><strong>Last-Modified / If-Modified-Since</strong>:<br></li>
+<li><code>Last-Modified</code>: 服务器在响应中返回资源的最后修改时间。<br></li>
+<li><code>If-Modified-Since</code>: 浏览器在请求中包含上次获取资源时服务器返回的<code>Last-Modified</code>时间，服务器根据此时间判断资源是否发生了变化。<br></li>
+<li><strong>ETag / If-None-Match</strong>:<br></li>
+<li><code>ETag</code>: 服务器在响应中返回资源的一个唯一标识（实体标签）。<br></li>
+<li><code>If-None-Match</code>: 浏览器在请求中包含上次获取资源时服务器返回的<code>ETag</code>值，服务器根据此值判断资源是否发生了变化。<br></li>
+</ul>
+<p><strong>例子：</strong><br></p>
+<p><br></p>
+<p>在后续请求中：<br></p>
+<p>如果资源没有变化，服务器返回304状态码，并且不返回资源主体内容；如果资源发生变化，服务器返回200状态码，并返回新的资源内容。<br></p>
+<h3>总结<br></h3>
+<ul>
+<li><strong>强缓存</strong>: 资源在指定时间内无需向服务器发送请求，直接从缓存读取。<br></li>
+<li><strong>协商缓存</strong>: 资源可能需要向服务器发送请求，服务器决定资源是否需要更新。<br></li>
+</ul>
+<h2><span style="color: rgb(17, 124, 238)">【中等】</span>强缓存和协商缓存的使用场景有哪些？哪些需要强缓存？<br></h2>
+<p>强缓存和协商缓存各有其适用的场景，根据资源的更新频率和实时性要求来选择合适的缓存策略可以显著提高网站性能和用户体验。<br></p>
+<h3>强缓存的使用场景<br></h3>
+<p>强缓存适用于那些更新不频繁且对实时性要求不高的资源。这些资源在浏览器缓存的有效期内可以直接从缓存读取，而无需每次都向服务器请求，减少了网络请求次数，提高了加载速度。<br></p>
+<h4>常见的适用场景<br></h4>
+<ul>
+<li><strong>静态资源</strong>:<br></li>
+<li><strong>CSS文件</strong>: 样式表通常不会频繁更改，特别是在发布新版本之前，可以长时间缓存。<br></li>
+<li><strong>JavaScript文件</strong>: 类似于CSS文件，更新频率较低，可以设置较长的缓存时间。<br></li>
+<li><strong>图片、字体文件</strong>: 图像、图标和字体文件等资源通常不会频繁更改，适合强缓存。<br></li>
+<li><strong>版本化资源</strong>:<br></li>
+<li><strong>通过文件名版本化的资源</strong>: 例如，使用文件名中的哈希值（如<code>app.abc123.js</code>）来区分不同版本的资源。每次资源更新时更改文件名，使得客户端始终加载最新的资源，而旧资源可以被长时间缓存。<br></li>
+</ul>
+<h4>强缓存的实现<br></h4>
+<ul>
+<li><code>Cache-Control: max-age</code>头部：设置资源的缓存时间，以秒为单位。<br></li>
+<li><code>Expires</code>头部：指定资源的过期时间，使用具体的日期和时间。<br></li>
+</ul>
+<p><br></p>
+<h3>协商缓存的使用场景<br></h3>
+<p>协商缓存适用于那些更新较频繁且需要确保资源最新的场景。在缓存有效期到期后，浏览器会向服务器发送请求，通过ETag或Last-Modified头部进行资源验证，如果资源没有变化，服务器会返回304状态码，浏览器继续使用缓存。<br></p>
+<h4>常见的适用场景<br></h4>
+<ul>
+<li><strong>动态内容</strong>:<br></li>
+<li><strong>API响应</strong>: API的数据响应可能会频繁变化，因此需要通过协商缓存来确保数据的最新性。<br></li>
+<li><strong>用户生成内容</strong>: 如博客文章、评论等，内容可能会随时更新，需要通过协商缓存机制来确保用户看到的是最新内容。<br></li>
+<li><strong>频繁更新的静态资源</strong>:<br></li>
+<li><strong>经常修改的配置文件</strong>: 例如配置文件、JSON数据文件等，需要确保用户获取到最新的配置数据。<br></li>
+<li><strong>定期更新的页面</strong>: 如新闻网站的首页、更新频率较高的内容页面等。<br></li>
+</ul>
+<h4>协商缓存的实现<br></h4>
+<ul>
+<li><code>ETag</code>头部：服务器生成的资源唯一标识符。<br></li>
+</ul>
+<p><br></p>
+<ul>
+<li><code>Last-Modified</code>头部：资源的最后修改时间。<br></li>
+</ul>
+<h3>综合使用强缓存和协商缓存<br></h3>
+<p>在实际应用中，强缓存和协商缓存可以结合使用，以提供更高效和灵活的缓存策略。例如：<br></p>
+<ul>
+<li>对于版本化的静态资源，使用强缓存以实现长期缓存。<br></li>
+<li>对于动态内容或频繁更新的资源，使用协商缓存以确保数据的最新性。<br></li>
+</ul>
+<h3>示例配置<br></h3>
+<h4>静态资源的强缓存<br></h4>
+<h4>动态内容的协商缓存<br></h4>
+<p>通过合理配置强缓存和协商缓存，可以在保证性能的同时确保资源的及时更新。<br></p>
+<h2><span style="color: rgb(17, 124, 238)">【中等】</span>SSR 渲染、CSR渲染、SSG 渲染、同构渲染的区别是什么？<br></h2>
+<p>SSR（Server-Side Rendering）、CSR（Client-Side Rendering）、SSG（Static Site Generation）和同构渲染都是与前端Web开发相关的渲染方式，它们有不同的工作方式和应用场景。以下是它们之间的区别：<br></p>
+<ul>
+<li><strong>SSR（Server-Side Rendering）：</strong><br></li>
+<li>服务端渲染。<br></li>
+<li>在服务器端生成HTML，并将完整的HTML页面发送到浏览器。<br></li>
+<li>通常用于传统的多页面应用（MPA）或需要搜索引擎优化（SEO）的单页面应用（SPA）。<br></li>
+<li>支持初次加载时更快的首屏渲染，有利于SEO，但可能会增加服务器负担。<br></li>
+<li><strong>CSR（Client-Side Rendering）：</strong><br></li>
+<li>客户端渲染。<br></li>
+<li>仅在浏览器中使用JavaScript动态渲染内容。<br></li>
+<li>适用于单页面应用（SPA）和应用内路由，通过AJAX或Fetch请求从服务器获取数据。<br></li>
+<li>首次加载可能会较慢，不利于SEO，但可以提供更流畅的用户体验。<br></li>
+<li><strong>SSG（Static Site Generation）：</strong><br></li>
+<li>静态站点生成。<br></li>
+<li>在构建时生成HTML文件，不需要服务器进行动态渲染。<br></li>
+<li>适用于内容不频繁更改的网站，如博客、企业站点等。<br></li>
+<li>静态文件可以通过CDN分发，提供高性能和低成本的解决方案。<br></li>
+<li><strong>同构渲染（Isomorphic Rendering）：</strong><br></li>
+<li>也称为Universal渲染。<br></li>
+<li>结合了SSR和CSR的优点，既在服务器端生成HTML，又在客户端进行交互。<br></li>
+<li>首次加载时有利于SEO和性能，同时提供SPA的交互性。<br></li>
+<li>通常需要专业的框架和库，如Next.js（React）或Nuxt.js（Vue）。<br></li>
+</ul>
+<p>总结来说，SSR和SSG适用于需要SEO和性能优化的情况，CSR适用于交互性强的单页面应用，而同构渲染是一种折中的方法，结合了SSR和CSR的优点，适用于需要SEO和交互性的场景。选择合适的渲染方式取决于项目的需求和约束条件。<br></p>
+<p><br></p>
+<h2><span style="color: rgb(17, 124, 238)">【中等】</span>应该在什么场景下使用SSR渲染，什么场景下使用CSR渲染？<br></h2>
+<p>选择使用SSR（Server-Side Rendering）或CSR（Client-Side Rendering）应该根据项目的需求和目标来确定。以下是一些通常建议的使用场景：<br></p>
+<p><strong>使用SSR渲染的场景：</strong><br></p>
+<ul>
+<li><strong>SEO重要的网站：</strong>如果你的网站需要在搜索引擎中获得良好的排名，SSR是一个不错的选择，因为搜索引擎可以轻松地抓取和索引服务器端渲染的HTML内容。<br></li>
+<li><strong>首屏加载速度至关重要：</strong>对于需要快速加载首屏内容的应用程序，SSR通常比CSR更快，因为用户在首次加载时将获得完整的渲染页面。<br></li>
+<li><strong>有限的客户端计算能力：</strong>如果你的客户端设备有限的计算能力，不适合进行复杂的客户端渲染，SSR可以将部分渲染工作转移到服务器上，降低客户端负担。<br></li>
+<li><strong>多页面应用（MPA）：</strong>在传统的多页面应用中，每个页面都可以使用SSR，以确保每个页面都有良好的性能和SEO。<br></li>
+</ul>
+<p><strong>使用CSR渲染的场景：</strong><br></p>
+<ul>
+<li><strong>富交互性单页面应用（SPA）：</strong>对于需要大量客户端交互的应用程序，CSR是常见选择，因为它可以提供更流畅的用户体验，无需每次导航都从服务器加载整个页面。<br></li>
+<li><strong>内容频繁变更的应用：</strong>如果你的应用的内容频繁变化，或者需要根据用户行为动态加载数据，CSR可以更灵活地处理这些情况。<br></li>
+<li><strong>复杂的前端逻辑：</strong>如果你的前端逻辑非常复杂，包括大量的客户端路由、状态管理和组件交互，CSR可以更好地满足这些要求。<br></li>
+<li><strong>单页应用（SPA）框架：</strong>使用流行的单页应用框架（如React、Angular、Vue.js）时，CSR是常见的选择，因为这些框架天生支持客户端渲染。<br></li>
+</ul>
+<p>需要注意的是，有些项目也可以采用同构渲染的方法，结合了SSR和CSR的优点，以满足多种需求。最终的决策应该根据项目的特定需求、性能要求和SEO优化等因素来做出。<br></p>
+<p><br></p>
+<h2><span style="color: rgb(17, 124, 238)">【中等】</span>同构渲染应该如何实现？<br></h2>
+<p>同构渲染（Isomorphic Rendering）是一种结合了服务器端渲染（SSR）和客户端端渲染（CSR）的方法，旨在兼顾两者的优点。同构渲染旨在提供更好的性能、搜索引擎优化（SEO）、首次加载速度以及流畅的用户体验。以下是实现同构渲染的一般步骤：<br></p>
+<ul>
+<li><strong>选择合适的框架：</strong>大多数现代JavaScript框架提供了支持同构渲染的能力。例如，React有Next.js，Vue.js有Nuxt.js，Angular也有Angular Universal等。<br></li>
+<li><strong>服务器端渲染：</strong>在服务器上设置一个端点，当用户访问应用时，服务器会渲染初始HTML，并将其发送到浏览器。这有助于提供较快的首次加载速度和对搜索引擎友好的HTML。<br></li>
+<li><strong>客户端端渲染：</strong>在浏览器中，客户端代码接管页面的控制，并继续处理后续的页面渲染和交互。这确保了应用的交互性和动态性。<br></li>
+<li><strong>共享代码：</strong>同构渲染应用需要共享部分代码，以确保在服务器和客户端上都能正确渲染页面。这包括组件、路由配置、数据获取等。<br></li>
+<li><strong>数据获取：</strong>在同构渲染中，数据获取可以在服务器端和客户端之间共享，以避免不必要的数据获取。通常，首次加载时数据可以在服务器端获取并附加到页面，后续的数据获取可以在客户端完成。<br></li>
+<li><strong>路由处理：</strong>同构应用需要能够在服务器和客户端上处理路由，以确保用户导航时页面正确渲染。<br></li>
+</ul>
+<p>实现同构渲染的主要目标是在首次加载时提供更快的渲染速度和更好的SEO，同时在客户端上提供交互性。同构渲染不一定需要纯粹的SSR或CSR，因为它结合了两者的优点。但在某些情况下，仍然可以考虑使用SSR或CSR来满足特定需求：<br></p>
+<ul>
+<li><strong>SSR用例：</strong>如果你有一些静态内容或需要SEO优化的页面，仍然可以使用SSR来渲染这些页面。同构渲染可以与SSR结合使用，以提供SEO友好的内容。<br></li>
+<li><strong>CSR用例：</strong>对于高度交互性的页面或部分，你仍然可以使用CSR，因为同构渲染中的CSR部分可以处理用户交互。<br></li>
+</ul>
+<p>综上所述，同构渲染是一种强大的渲染方法，可以在多方面提高应用性能和用户体验，但根据具体需求，仍然可以结合使用SSR或CSR以满足不同的用例。<br></p>
+<p><br></p>
+<h2><span style="color: rgb(17, 124, 238)">【中等】</span>有了同构渲染之后，是不是意味着所有的项目都可以使用同构渲染而放弃单独的 SSR、CSR？<br></h2>
+<p>尽管同构渲染在许多情况下提供了SSR和CSR的优点，但<strong>并不意味</strong>着所有项目都应该使用同构渲染而放弃独立的SSR或CSR。项目的具体需求和考虑因素可能会导致你选择继续使用纯SSR或CSR，或者在同构渲染中结合使用它们。以下是一些情况，可能不适合完全采用同构渲染：<br></p>
+<ul>
+<li><strong>项目复杂度：</strong>对于简单的项目，可能不需要同构渲染，因为纯CSR可能已经足够快速和有效。<br></li>
+<li><strong>性能需求：</strong>对于高性能要求的应用，如大规模电子商务平台或在线游戏，可能需要更多的细粒度控制，此时纯SSR或CSR可能更合适。<br></li>
+<li><strong>资源限制：</strong>在某些情况下，服务器端资源有限，或者希望减少服务器端负担的项目可能更倾向于纯CSR，以减轻服务器端的工作。<br></li>
+<li><strong>交互需求：</strong>对于完全交互性和SPA功能的应用，CSR可能更适合，因为它可以实现更强大的客户端交互。<br></li>
+<li><strong>开发团队能力：</strong>同构渲染可能需要更多的工程和开发成本，需要更复杂的配置和代码结构。如果开发团队没有相关经验或资源，可能会选择使用单一的SSR或CSR。<br></li>
+</ul>
+<p>总之，决定采用同构渲染还是保持纯SSR或CSR取决于项目的具体需求、性能目标、开发团队能力和资源限制等因素。同构渲染是一个有用的渲染方法，但并不适用于每种情况。在选择时，建议仔细评估项目的要求和优势，以确保选取最适合的渲染策略。<br></p>
+<h2><span style="color: rgb(223, 42, 63)">【困难】</span>什么是单点登录（SSO）？单点登录的概念以及相关面试内容<br></h2>
+<h3><span style="color: rgb(37, 37, 37)">01：什么是单点登录？</span><br></h3>
+<p><span style="color: rgb(0, 0, 0)">单点登录（Single Sign On），简称为 SSO，是目前比较流行的企业业务整合的解决方案 之一。SSO 的定义是在多个应用系统中，用户只需要登录一次就可以访问所有相互信任的应用系统。</span><br></p>
+<p><br></p>
+<h3><span style="color: rgb(0, 0, 0)">02：单点登录概念</span><br></h3>
+<p><span style="color: rgb(44, 62, 80)">单点登录分为多个系统和一个认证系统SSO，如图：</span>[图片]<span style="color: rgb(44, 62, 80)">图中有4个系统，分别是 Application1、Application2、Application3、和 SSO。Application1、Application2、Application3 没有登录模块，而 SSO 只有登录模块，没有其他的业务模块，当 Application1、Application2、Application3 需要登录时，将跳到 SSO 系统，SSO 系统完成登录，其他的应用系统也就随之登录了。</span><br></p>
+<p><br></p>
+<h3><span style="color: rgb(44, 62, 80)">03：同域下的单点登录</span><br></h3>
+<p><span style="color: rgb(44, 62, 80)">利用 cookie 可以设置二级域名的特点达到 cookie 共享的目的。</span><br></p>
+<p><span style="color: rgb(44, 62, 80)">例如此时有三个域名：app1.a.com，app2.a.com，sso.a.com。</span><br></p>
+<p><span style="color: rgb(44, 62, 80)">当用户在 app1.a.com 系统中的 session 中查找不到时，因为之前登录会在 sso.a.com 中设置二级域名的 cookie（在这里是.a.com），所以 app1.a.com 的请求就可以拿到该 cookie，接着用该 cookie 请求 sso.a.com 的接口，sso.a.com 系统拿到 cookie 后会在自己的 session 中查找是否存在，存在则返回 session 给 app1.a.com 系统同步，否则让用户跳转到 sso.a.com 系统进行登录。</span><br></p>
+<p><br></p>
+<h3><span style="color: rgb(44, 62, 80)">04：不同域下的单点登录</span><br></h3>
+<p><span style="color: rgb(44, 62, 80)">不同域下的单点登录参考 CAS 官网上的标准流程，具体流程如下：</span><br></p>
+<ul>
+<li><span style="color: rgb(44, 62, 80)">用户访问 app 系统，app 系统是需要登录的，但用户现在没有登录。</span><br></li>
+<li><span style="color: rgb(44, 62, 80)">跳转到 SSO 登录系统，SSO 系统也没有登录，弹出用户登录页。</span><br></li>
+<li><span style="color: rgb(44, 62, 80)">用户填写用户名、密码，SSO 系统进行认证后，将登录状态写入 SSO 的 session，浏览器（Browser）中写入 SSO 域下的 Cookie。</span><br></li>
+<li><span style="color: rgb(44, 62, 80)">SSO 系统登录完成后会生成一个 ST（Service Ticket），然后跳转到 app 系统，同时将 ST 作为参数传递给 app 系统。</span><br></li>
+<li><span style="color: rgb(44, 62, 80)">app 系统拿到 ST 后，从后台向 SSO 发送请求，验证 ST 是否有效。</span><br></li>
+<li><span style="color: rgb(44, 62, 80)">验证通过后，app 系统将登录状态写入 session 并设置 app 域下的 Cookie。</span><br></li>
+</ul>
+<p><span style="color: rgb(44, 62, 80)">至此，跨域单点登录就完成了。以后我们再访问 app 系统时，app 就是登录的。接下来，我们再看看访问 app2 系统时的流程。用户访问 app2 系统，app2 系统没有登录，跳转到 SSO。</span><br></p>
+<ul>
+<li><span style="color: rgb(44, 62, 80)">由于 SSO 已经登录了，不需要重新登录认证。</span><br></li>
+<li><span style="color: rgb(44, 62, 80)">SSO 生成 ST，浏览器跳转到 app2 系统，并将 ST 作为参数传递给 app2。</span><br></li>
+<li><span style="color: rgb(44, 62, 80)">app2 拿到 ST，后台访问 SSO，验证 ST 是否有效。</span><br></li>
+<li><span style="color: rgb(44, 62, 80)">验证成功后，app2 将登录状态写入 session，并在 app2 域下写入 Cookie。</span><br></li>
+</ul>
+<p><span style="color: rgb(44, 62, 80)">这样，app2 系统不需要走登录流程，就已经是登录了。SSO，app 和 app2 在不同的域，它们之间的 session 不共享也是没问题的。</span><span style="color: rgb(44, 62, 80)">参考链接：</span><br></p>
+<ul>
+<li><a href="https://developer.aliyun.com/article/636281">https://developer.aliyun.com/article/636281(opens new window)</a><br></li>
+<li><a href="https://github.com/NameWjp/blog/issues/87">微服务登录流程分析(opens new window)</a><br></li>
+</ul>
+<p><br></p>
+<h3><span style="color: rgb(37, 37, 37)">05：单点登录系统，如果cookie禁用，你们怎么解决?</span><br></h3>
+<p><span style="color: rgb(0, 0, 0)">如果禁用cookie可以使用url中带参数，把token传递给服务端。</span><br></p>
+<p><span style="color: rgb(0, 0, 0)">当然此方法涉及安全性问题，其实在cookie中保存token同样存在安全性问题。推荐使用sso框架CAS实现单点登录。</span><br></p>
+<h3><span style="color: rgb(37, 37, 37)">06：SSO原理（单点登录的过程）</span><br></h3>
+<p><span style="color: rgb(0, 0, 0)">以登录天猫为例进行说明：</span><br></p>
+<ul>
+<li><span style="color: rgb(0, 0, 0)">当⽤户第⼀次访问淘宝的时候，因为还没有登录，会被引导到认证中⼼进⾏登录。</span><br></li>
+<li><span style="color: rgb(0, 0, 0)">根据⽤户提供的登录信息，认证系统进⾏身份验证，如果通过，则登录成功，并返回给⽤户⼀个认证的凭据（JWT token）。</span><br></li>
+<li><span style="color: rgb(0, 0, 0)">当⽤户访问天猫时，就会将这个 JWT token 带上，作为⾃⼰认证的凭据。</span><br></li>
+<li><span style="color: rgb(0, 0, 0)">应⽤系统接收到请求后会把 JWT token 送到认证中⼼进⾏校验。</span><br></li>
+<li><span style="color: rgb(0, 0, 0)">如果通过校验，⽤户就可以在不⽤再次登录的情况下访问天猫了。</span><br></li>
+</ul>
+<h3><span style="color: rgb(37, 37, 37)">07：什么是CAS？</span><br></h3>
+<p><span style="color: rgb(0, 0, 0)">CAS框架：CAS（Central Authentication Service，即：统一认证服务）是实现SSO单点登录的框架。</span><br></p>
+<p><span style="color: rgb(0, 0, 0)">CAS分为两部分</span><br></p>
+<ul>
+<li><span style="color: rgb(0, 0, 0)">CAS Server</span><br></li>
+<li><span style="color: rgb(0, 0, 0)">CAS Client。</span><br></li>
+</ul>
+<p><span style="color: rgb(0, 0, 0)">CAS Server用来负责用户的认证工作，就像是把第一次登录用户的一个标识存在这里，以便此用户在其他系统登录时验证其需不需要再次登录。</span><span style="color: rgb(0, 0, 0)">CAS Client就是我们自己开发的应用程序，需要接入CAS Server端。当用户访问我们的应用时，首先需要重定向到CAS Server端进行验证，要是原来登陆过，就免去登录，重定向到下游系统，否则进行用户名密码登陆操作。</span><br></p>
+<h3><span style="color: rgb(37, 37, 37)">08：CAS中3个术语?</span><br></h3>
+<p><span style="color: rgb(0, 0, 0)">Ticket Granting ticket (TGT) ：可以认为是CAS Server根据用户名密码生成的一张票，存在Server端</span><span style="color: rgb(0, 0, 0)">Ticket-granting cookie (TGC) ：其实就是一个Cookie，存放用户身份信息，由Server发给Client端</span><span style="color: rgb(0, 0, 0)">Service ticket (ST) ：由TGT生成的一次性票据，用于验证，只能用一次。相当于Server发给Client一张票，然后Client拿着这个票再来找Server验证，看看是不是Server签发的。</span><br></p>
+<h3><span style="color: rgb(37, 37, 37)">09：CAS处理流程?</span><br></h3>
+<ul>
+<li><span style="color: rgb(0, 0, 0)">用户访问网站，第一次来，重定向到 CAS Server，发现没有cookie，所以再重定向到CAS Server端的登录页面，并且URL带有网站地址，便于认证成功后跳转，形如 http ?/cas-server:8100/login?service=http ?/localhost:8081</span><span style="color: rgb(0, 0, 0)">注意：service后面这个地址就是登录成功后要重定向的下游系统URL。</span><br></li>
+<li><span style="color: rgb(0, 0, 0)">在登陆页面输入用户名密码认证，认证成功后cas-server生成TGT，再用TGT生成一个ST。 然后再第三次重定向并返回ST和cookie(TGC)到浏览器</span><br></li>
+<li><span style="color: rgb(0, 0, 0)">浏览器带着ST再访问想要访问的地址：</span><span style="color: rgb(0, 0, 0)">http ?/localhost:8081/?ticket=ST-25939-sqbDVZcuSvrvBC6MQlg5</span><span style="color: rgb(0, 0, 0)">注意：ticket后面那一串就是ST</span><br></li>
+<li><span style="color: rgb(0, 0, 0)">浏览器的服务器收到ST后再去cas-server验证一下是否为自己签发的，验证通过后就会显示页面信息，也就是重定向到第1步service后面的那个URL</span><span style="color: rgb(0, 0, 0)">首次登陆完毕。</span><br></li>
+<li><span style="color: rgb(0, 0, 0)">再登陆另一个接入CAS的网站，重定向到CAS Server，server判断是第一次来（但是此时有TGC，也就是cookie，所以不用去登陆页面了），但此时没有ST，去cas-server申请一个于是重定向到cas-server，形如：http: //cas-server:8100/login?service=http ?/localhost:8082 &amp;&amp; TGC(cookie) (传目标地址和cookie）</span><br></li>
+<li><span style="color: rgb(0, 0, 0)">cas-server生成了ST后重定向给浏览器http ?/localhost:8082/?ticket=ST-25939-sqfsafgefesaedswqqw5-xxxx</span><br></li>
+<li><span style="color: rgb(0, 0, 0)">浏览器的服务器收到ST后再去cas-server验证一下是否为自己签发的，验证通过后就会显示页面信息（同第4步）</span><br></li>
+</ul>
+<h3><span style="color: rgb(37, 37, 37)">10：什么是Token?</span><br></h3>
+<p><span style="color: rgb(0, 0, 0)">Token的意思是“令牌”，是服务端生成的一串字符串，作为客户端进行请求的一个标识。</span><span style="color: rgb(0, 0, 0)">当用户第一次登录后，服务器生成一个token并将此token返回给客户端，以后客户端只需带上这个token前来请求数据即可，无需再次带上用户名和密码。</span><span style="color: rgb(0, 0, 0)">简单Token的组成；uid(用户唯一的身份标识)、time(当前时间的时间戳)、sign（签名，token的前几位以哈希算法压缩成的一定长度的十六进制字符串。为防止token泄露）。</span><br></p>
+<h3><span style="color: rgb(37, 37, 37)">11：OAuth是什么？</span><br></h3>
+<p><span style="color: rgb(0, 0, 0)">OAuth 是一个行业的标准授权协议，主要用来授权第三方应用获取有限的权限。实际上它就是一种授权机制，最终目的是为第三方应用颁发一个有时效性令牌 token，使得第三方应用能够通过该令牌获取相关的资源。</span><span style="color: rgb(0, 0, 0)">OAuth 2.0 比较常用的场景就是第三方登录，当你的网站接入了第三方登录时一般就是使用的 OAuth 2.0 协议。</span><span style="color: rgb(0, 0, 0)">现在OAuth 2.0也常见于支付场景（微信支付、支付宝支付）和开发平台（微信开放平台、阿里开放平台等等）。</span><br></p>
+<h3><span style="color: rgb(37, 37, 37)">12：介绍下Access Token ?</span><br></h3>
+<p><span style="color: rgb(0, 0, 0)">Access Token 是在 Oauth2.0 协议中，客户端访问资源服务器时需要带上的令牌（其实就是一段全局唯一的随机字符串）。拥有这个令牌代表着得到用户的授权。令牌里面包含哪个用户 在什么时候 授权给哪个app去做什么事情。当然这些信息是不能直接从Access Token 看出来的，而是存在平台方的数据库中，平台可以用Access Token 作为 key 去查询出这些信息，然后验证调用方是否有权限。</span><br></p>
+<h3><span style="color: rgb(37, 37, 37)">13：介绍下Refresh Token?</span><br></h3>
+<p><span style="color: rgb(0, 0, 0)">Refresh Token是专用于刷新 Access Token 的 token。如果没有Refresh Token，也可以刷新 Access Token，但每次刷新都要用户输入登录用户名与密码。有了 Refresh Token，客户端直接用Refresh Token 去更新Access Token，无需用户进行额外的操作。</span><br></p>
+<h3><span style="color: rgb(37, 37, 37)">14：介绍下JWT？</span><br></h3>
+<p><span style="color: rgb(0, 0, 0)">Json Web Token (JWT)是为了在网络应用环境间传递声明而执行的一种基于JSON的开放标准。该token被设计为紧凑且安全，特别适用于分布式站点单点登录场景。</span><span style="color: rgb(0, 0, 0)">JWT由头部（header)、载荷（payload)、签证（signature) 三部分组成。</span><br></p>
+<p><br></p>
+<p>5 人点赞</p></article>
+</body>
+</html>
