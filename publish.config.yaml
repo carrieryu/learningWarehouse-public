@@ -1,19 +1,26 @@
 # 主仓库根目录（相对 learningWarehouse-public 子项目的路径）
 source_root: ..
 
+# 别名定义文件（相对 source_root）；路径变更时改主仓库 publish.aliases.yaml
+aliases_file: publish.aliases.yaml
+
 entries:
-  - source: "AI Agent相关/AI基础认知/1. ai_agent.html"
+  - source: "@ai_agent_mindmap_html"
     target: "AI Agent相关/AI基础认知/AI 新技术与 Agent 生态思维导图"
     mode: html
 
-  - source: "AI Agent相关/AI基础认知/solution.html"
+  - source: "@ai_basics_html"
     target: "AI Agent相关/AI基础认知/AI 基础认知"
     mode: html
 
-  - source: "AI Agent相关/AI基础认知/1.【简单】简述以下名词,概念的理解：MCP、A2A、Claude Code、Codex、Manus、AutoGLM、豆包手机、Coworrk、OpenClaw、Vibe Coding、Skills、WorkFlow.png"
+  - source: "@ai_concepts_mindmap_png"
     target: "AI Agent相关/AI基础认知/1.【简单】简述以下名词,概念的理解：MCP、A2A、Claude Code、Codex、Manus、AutoGLM、豆包手机、Coworrk、OpenClaw、Vibe Coding、Skills、WorkFlow.png"
     mode: image
 
-  - source: "问题积累/使用 ICC 解决 CMYK 与 Web 预览色彩不一致问题的工程实践.md"
+  - source: "@icc_color_management_md"
     target: "问题积累/使用 ICC 解决 CMYK 与 Web 预览色彩不一致问题的工程实践"
     mode: markdown
+
+  - source: "**/solution.html"
+    mode: html
+    # 省略 target：批量匹配，每个 solution.html 发布到其所在目录

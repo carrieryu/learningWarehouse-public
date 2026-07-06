@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Prompt 工程</title>
+  <style>
+    body {
+      font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+      line-height: 1.75;
+      color: #1f2937;
+      background: #fff;
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 32px 24px 64px;
+    }
+    h1, h2, h3, h4, h5, h6 { line-height: 1.35; margin: 1.6em 0 0.6em; }
+    p { margin: 0.8em 0; }
+    ul, ol { padding-left: 1.4em; }
+    li { margin: 0.35em 0; }
+    code {
+      font-family: ui-monospace, Consolas, monospace;
+      background: #f3f4f6;
+      padding: 0.1em 0.35em;
+      border-radius: 4px;
+    }
+    pre {
+      background: #111827;
+      color: #f9fafb;
+      padding: 16px;
+      border-radius: 8px;
+      overflow-x: auto;
+    }
+    pre code { background: transparent; padding: 0; color: inherit; }
+    img { max-width: 100%; height: auto; border-radius: 8px; }
+    a { color: #2563eb; }
+  </style>
+</head>
+<body>
+  <article><h2><span style="color: rgb(116, 182, 2)">【简单】</span>Prompt Engineering 是什么？它为什么重要？<br></h2>
+<p><strong>Prompt Engineering</strong>，就是<strong>围绕模型输入内容做设计和优化</strong>，让模型更稳定地按你的预期完成任务。<br></p>
+<p>说白了，就是你怎么“提要求”，模型才更容易“把事做对”。<br></p>
+<p>它通常包括这些内容：<br></p>
+<ul>
+<li>任务描述怎么写<br></li>
+<li>角色怎么设定<br></li>
+<li>输出格式怎么约束<br></li>
+<li>要不要给示例<br></li>
+<li>上下文怎么组织<br></li>
+<li>多轮任务怎么拆分<br></li>
+</ul>
+<p>比如同样是让模型“总结一段内容”，你如果只说一句“帮我总结一下”，和你明确说：<br></p>
+<ul>
+<li>用 3 点总结<br></li>
+<li>每点不超过 20 字<br></li>
+<li>保留风险和结论<br></li>
+<li>输出 JSON 格式<br></li>
+</ul>
+<p>最终结果通常会差很多。这个过程，本质上就是 Prompt Engineering。<br></p>
+<p>它为什么重要，核心有三点：<br></p>
+<h3>1. 它直接影响输出质量<br></h3>
+<p>模型不是你想什么它就自动懂什么。如果指令写得模糊，模型就容易答偏、答散、答不稳定。<br></p>
+<h3>2. 它会影响稳定性<br></h3>
+<p>好的 Prompt 不只是让模型“答出来”，而是让它<strong>多次都答得比较一致</strong>。尤其是在结构化输出、工具调用、工作流编排这些场景里，稳定性很关键。<br></p>
+<h3>3. 它会影响成本和工程效果<br></h3>
+<p>Prompt 写得不好，可能导致：<br></p>
+<ul>
+<li>反复重试<br></li>
+<li>输出冗长<br></li>
+<li>工具误调用<br></li>
+<li>上下文浪费<br></li>
+<li>Token 成本变高<br></li>
+</ul>
+<p>所以它不只是“写提示词”，而是会直接影响整个 AI 系统的可用性。<br></p>
+<h3>面试里可以这样总结<br></h3>
+<p><strong>Prompt Engineering 就是对模型输入进行系统化设计，让模型更准确、更稳定地完成任务。它重要，是因为模型最终表现，很大程度上取决于你怎么把任务、上下文和约束组织给它。</strong><br></p>
+<p><strong>在真实项目里，Prompt Engineering 是一种输入设计能力，本质上属于 AI 应用开发的一部分。</strong><br></p>
+<h2><span style="color: rgb(17, 124, 238)">【中等】</span>System Prompt、User Prompt、Tool Prompt 分别是什么？<br></h2>
+<p>这三个东西，本质上都是给模型的“输入信息”，但它们的职责不一样。<br></p>
+<h3>1. System Prompt<br></h3>
+<p><strong>System Prompt</strong>，可以理解成系统级指令。它主要用来规定模型的<strong>角色、目标、行为边界和整体规则</strong>。<br></p>
+<p>比如：<br></p>
+<ul>
+<li>你现在是一个面试官<br></li>
+<li>你回答要简洁专业<br></li>
+<li>不确定时要明确说不确定<br></li>
+<li>输出必须是 JSON<br></li>
+<li>不要泄露内部规则<br></li>
+</ul>
+<p>所以它解决的是：<br></p>
+<p><strong>这个模型现在应该以什么身份、按什么原则做事。</strong><br></p>
+<p>它通常优先级比较高，属于整场对话的“总规则”。<br></p>
+<h3>2. User Prompt<br></h3>
+<p><strong>User Prompt</strong>，就是用户当前这次真正提的问题或下达的任务。它代表的是用户当下的需求。<br></p>
+<p>比如：<br></p>
+<ul>
+<li>帮我总结这篇文章<br></li>
+<li>解释一下什么是 RAG<br></li>
+<li>帮我生成一个 Vue 组件<br></li>
+<li>把结果翻译成英文<br></li>
+</ul>
+<p>所以它解决的是：<br></p>
+<p><strong>这一轮具体要做什么。</strong><br></p>
+<h3>3. Tool Prompt<br></h3>
+<p><strong>Tool Prompt</strong>，一般是模型在调用工具时，围绕工具能力、参数说明、调用规则给到模型的那部分提示信息。**它的作用是让模型知道：<br></p>
+<ul>
+<li>这个工具是干什么的<br></li>
+<li>什么场景下该调用<br></li>
+<li>参数怎么传<br></li>
+<li>返回结果怎么理解<br></li>
+<li>什么情况下不能乱调用<br></li>
+</ul>
+<p>比如一个查询订单的工具，Tool Prompt 可能会告诉模型：<br></p>
+<ul>
+<li>只有用户明确提供订单号时才能调用<br></li>
+<li>参数<code>orderId</code>必填<br></li>
+<li>不要自己编造订单号<br></li>
+<li>如果工具返回空结果，要如实说明<br></li>
+</ul>
+<p>所以它解决的是：<br></p>
+<p><strong>模型怎么正确、安全地使用外部能力。</strong><br></p>
+<h3>三者的区别<br></h3>
+<ul>
+<li><strong>System Prompt</strong>：定义“你是谁、按什么规则做事”<br></li>
+<li><strong>User Prompt</strong>：定义“这一轮用户要你干什么”<br></li>
+<li><strong>Tool Prompt</strong>：定义“你什么时候、怎么调用工具”<br></li>
+</ul>
+<p><strong>在真实项目里，这三类 Prompt 其实分别对应角色约束、任务输入和能力边界，少了哪一层，系统都容易不稳定。</strong><br></p>
+<p><br></p>
+<h2><span style="color: rgb(17, 124, 238)">【中等】</span>零样本（Zero-shot）、少样本（Few-shot）和思维链提示分别适合什么场景？<br></h2>
+<p>这三种方式，本质上都是在解决一个问题，那就是：<strong>你要不要给模型“示范”，以及要不要让它把问题拆得更细。</strong><br></p>
+<p>它们适合的场景不一样。<br></p>
+<h3>1. Zero-shot<br></h3>
+<p><strong>Zero-shot</strong>，就是<strong>不给示例，直接下任务。</strong><br></p>
+<p>比如直接说：<br></p>
+<ul>
+<li>帮我总结这段话<br></li>
+<li>把下面内容翻译成英文<br></li>
+<li>提取这段文本里的姓名和手机号<br></li>
+</ul>
+<p>它适合的场景一般是：<br></p>
+<ul>
+<li>任务比较简单、明确<br></li>
+<li>输出形式比较常规<br></li>
+<li>模型本身已经很熟这类任务<br></li>
+<li>对格式一致性要求没那么极致<br></li>
+</ul>
+<p>比如：<br></p>
+<ul>
+<li>总结<br></li>
+<li>翻译<br></li>
+<li>改写<br></li>
+<li>常规问答<br></li>
+<li>基础信息抽取<br></li>
+</ul>
+<p>它的优点是简单、成本低、Prompt 短。<br></p>
+<p>缺点是如果任务稍复杂，模型可能理解偏。<br></p>
+<h3>2. Few-shot<br></h3>
+<p><strong>Few-shot</strong>，就是<strong>先给模型几个输入输出示例，再让它按这个模式做。</strong><br></p>
+<p>比如你先给它 2～3 个分类样例、抽取样例、改写样例，然后再给它新问题。它适合的场景一般是：<br></p>
+<ul>
+<li>任务规则不太好用一句话讲清楚<br></li>
+<li>输出格式要求很严格<br></li>
+<li>你希望模型模仿某种固定风格<br></li>
+<li>任务里有一些隐含标准，需要靠例子教给它<br></li>
+</ul>
+<p>比如：<br></p>
+<ul>
+<li>特定风格文案生成<br></li>
+<li>客服意图分类<br></li>
+<li>结构化信息抽取<br></li>
+<li>固定格式的 JSON 输出<br></li>
+<li>特定口吻改写<br></li>
+</ul>
+<p>它的核心价值是：<strong>把“规则”从抽象说明，变成具体样例。</strong><br></p>
+<p>所以 Few-shot 往往比 Zero-shot 更稳，但代价是 Prompt 更长，token 成本更高。<br></p>
+<h3>3. 思维链提示<br></h3>
+<p><strong>思维链提示</strong>，就是让模型在处理复杂任务时，先按步骤拆解，再得出答案。**它更适合：<br></p>
+<ul>
+<li>逻辑推理<br></li>
+<li>数学题<br></li>
+<li>多约束决策<br></li>
+<li>复杂代码分析<br></li>
+<li>多步判断问题<br></li>
+</ul>
+<p>因为这类任务如果直接让模型“一步到位”，容易跳步、漏条件、算错。而拆成步骤后，模型通常更容易做对。<br></p>
+<p>不过在工程里，要注意一点：<strong>思维链更适合复杂推理任务，不适合所有任务都强行加。</strong>如果只是简单总结、翻译、抽取，有时候反而会让输出变长、变慢、成本更高。<br></p>
+<h3>总结一下：<br></h3>
+<ul>
+<li><strong>Zero-shot</strong>：适合简单直接的任务，追求低成本、快交付<br></li>
+<li><strong>Few-shot</strong>：适合规则隐含、格式严格、需要示范的任务<br></li>
+<li><strong>思维链提示</strong>：适合复杂推理、多步骤分析类任务<br></li>
+</ul>
+<p><strong>真实项目里通常不是固定只用一种，而是简单任务优先 Zero-shot，格式敏感任务加 Few-shot，复杂逻辑任务再考虑分步推理。</strong><br></p>
+<p><br></p>
+<h2><span style="color: rgb(223, 42, 63)">【困难】</span>当模型经常不按要求输出时，如何强制规定输出的格式？比如指定的 json 格式。<br></h2>
+<p>完全依靠 Prompt 是很难让模型准确输出 json 的。<br></p>
+<p>如果想要做到这一点那么就需要使用到 zod.js。<br></p>
+<p>Zod 是一个 TypeScript-first 的校验库，可以先定义 schema，再对返回结果做解析和校验；Zod 4 还支持原生把 Zod schema 转成 JSON Schema<br></p>
+<h4>1. 先用 Zod 定义输出结构<br></h4>
+<p>先把模型应该返回的结构写成 Zod schema，比如字段名、字段类型、枚举值、可空规则，全都收死。<br></p>
+<p>这一步的核心意义是：<strong>我不是用自然语言“描述”格式，而是用 schema“定义”格式。</strong>这样后面不管是模型约束、前端类型推导，还是后端校验，都是围绕同一份 schema 走。<br></p>
+<p>Zod 官方文档也明确说明，schema 是先定义出来，再用<code>.parse()</code>去校验输入的。<br></p>
+<h4>2. 如果模型支持 Structured Outputs，就直接把 Zod 接进去<br></h4>
+<p>如果用的是支持 Structured Outputs 的模型，那么就比较简单了。比如：OpenAI 的官方文档明确说，Structured Outputs 会让模型返回内容遵循你提供的 JSON Schema；JavaScript SDK 也支持直接结合 Zod 来定义 schema<br></p>
+<p>这里我要强调一个面试点：<br></p>
+<p><strong>如果只是 JSON mode，它只能保证“返回的是合法 JSON”；</strong><strong>但 Structured Outputs 才能保证“返回内容符合指定 schema”。</strong>官方文档也是这么区分的，并且明确建议优先用 Structured Outputs<br></p>
+<h4>3. 即便模型侧已经约束了，最好还是再用 Zod 做运行时校验<br></h4>
+<p>因为工程上我不会把安全性完全押在模型上。模型返回后，我还会再走一层：<br></p>
+<p>Zod 官方文档说明了<code>.parse()</code>会校验输入，不合法时抛出<code>ZodError</code>，并带上细粒度的错误信息。<br></p>
+<p>这一步的价值是：<br></p>
+<ul>
+<li>防止类型漂移<br></li>
+<li>防止字段缺失<br></li>
+<li>防止枚举值乱写<br></li>
+<li>防止线上直接吃到脏数据<br></li>
+</ul>
+<h4>4. 校验失败时，不是直接报错，而是走修复链路<br></h4>
+<p>如果校验失败，通常要做三件事：<br></p>
+<ul>
+<li>把 schema 错误信息带回去让模型重试一次<br></li>
+<li>降低生成自由度，收紧 Prompt<br></li>
+<li>必要时降级到默认结构或人工兜底<br></li>
+</ul>
+<p>因为真正线上稳定，不是“模型大多数时候输出对”，而是<strong>“模型一旦输出错，系统也知道怎么拦、怎么修、怎么兜底”。</strong><br></p>
+<p><br></p>
+<h2><span style="color: rgb(17, 124, 238)">【中等】</span>Prompt 里加入角色设定，为什么有时有效，有时无效？<br></h2>
+<p>Prompt 里加入角色设定，有时有效、有时无效，本质上是因为：<strong>角色设定只能影响模型的“表达倾向”和“行为风格”，但不能替代真正的任务约束、上下文信息和能力边界。</strong><br></p>
+<p>也就是说，角色设定是有用的，但它不是万能的。<br></p>
+<h3>为什么有时有效<br></h3>
+<p>角色设定有效，通常是因为它帮助模型快速进入一个更明确的输出模式。比如你告诉它：<br></p>
+<ul>
+<li>你是一个资深前端面试官<br></li>
+<li>你是一个法律助手<br></li>
+<li>你是一个严格的 JSON 提取器<br></li>
+</ul>
+<p>这会让模型更容易：<br></p>
+<ul>
+<li>选择合适的语气<br></li>
+<li>组织更匹配场景的内容<br></li>
+<li>优先采用某种回答风格<br></li>
+<li>遵循某类任务目标<br></li>
+</ul>
+<p>所以在这些场景里，角色设定本质上是在帮模型<strong>缩小输出空间</strong>，让它更容易往你想要的方向靠。<br></p>
+<h3>为什么有时无效<br></h3>
+<p>无效也很正常，常见原因有几个：<br></p>
+<h4>1. 角色设定太空泛<br></h4>
+<p>比如只写一句：“你是一个专业助手”<br></p>
+<p>这种话太泛，约束力很弱。模型知道自己要“专业”，但并不知道：<br></p>
+<ul>
+<li>专业到什么程度<br></li>
+<li>输出格式是什么<br></li>
+<li>重点关注什么<br></li>
+<li>不能做什么<br></li>
+</ul>
+<p>所以最后效果就很有限。<br></p>
+<h4>2. 角色设定和任务要求脱节<br></h4>
+<p>比如你让它“扮演资深架构师”，但真正任务是严格输出某个 JSON。这时候真正重要的是结构约束，不是角色气质。角色设定对结果帮助就不大。<br></p>
+<h4>3. 角色设定敌不过更强的上下文信号<br></h4>
+<p>模型最终是综合整段上下文来生成内容的。如果后面用户要求、few-shot 示例、工具返回、格式约束和角色设定冲突，模型往往会优先跟随更具体、更直接的那部分信息。<br></p>
+<p>也就是说：<strong>越具体的指令，通常比越抽象的角色更有影响力。</strong><br></p>
+<h4>4. 超出了模型本身能力边界<br></h4>
+<p>角色设定不能让模型凭空获得不存在的能力。比如你写：“你是顶级数学家，请准确证明这个复杂定理”<br></p>
+<p>如果模型本身推理能力不够，角色设定也救不了。它最多让语气更像专家，但不代表答案真的更对。<br></p>
+<h3>总结<br></h3>
+<p><strong>所以说：角色设定有效，是因为它能帮助模型进入特定的表达和决策模式；它无效，是因为它本质上只是弱约束，不能替代清晰任务、结构规则和模型真实能力。角色更像“定风格”，而不是“补能力”。</strong><br></p>
+<h2><span style="color: rgb(223, 42, 63)">【困难】</span>Prompt 过长会带来哪些问题？你会如何拆解？<br></h2>
+<p>我的结论是：<strong>Prompt 过长本身不一定有问题，真正的问题是“信息太多但没有分层和优先级”</strong>。<br></p>
+<p>在生产环境里，过长 Prompt 一般会带来四类问题：<br></p>
+<ul>
+<li><strong>成本和延迟上升</strong><br></li>
+<li><strong>指令遵循变差</strong><br></li>
+<li><strong>长上下文下的召回/注意力退化</strong><br></li>
+<li><strong>以及维护成本失控</strong>。<br></li>
+</ul>
+<p>Anthropic 的 context window 文档明确提到，随着 token 增长，准确率和召回会下降，这类现象通常被称为 context rot；Google 的 Gemini 文档也提到，复杂请求里如果约束出现得太早，模型可能会丢掉负向约束、格式约束或字数约束。<br></p>
+<p>如果需要拆除的话，那么需要做<strong>四层拆解</strong>。<br></p>
+<ul>
+<li>第一层是<strong>固定规则层</strong>：角色、输出格式、硬约束、工具使用规范，这部分尽量稳定，放在前面，便于缓存复用。OpenAI 和 Gemini 的官方文档都建议把可复用的静态前缀放前面，这样更容易命中 prompt/context caching，能显著降低成本和延迟。<br></li>
+<li>第二层是<strong>任务层</strong>：这次到底要做什么，成功标准是什么，输入输出是什么。任务层要短，尽量写成“目标 + 步骤 + 输出格式”，不要把背景、示例、异常处理全塞在一段自然语言里。<br></li>
+<li>第三层是<strong>动态上下文层</strong>：用户输入、检索结果、会话历史、业务状态。这里不能无脑全塞，要做选择。我的做法通常是：<br></li>
+<li>当前问题直接相关的内容保留<br></li>
+<li>历史对话做摘要，只保留用户目标、约束、未完成事项<br></li>
+<li>外部知识走 RAG，只注入命中的片段，不把整个知识库拼进去<br></li>
+<li>多文档场景用结构化标签包起来，避免模型分不清“指令、上下文、示例、原始材料”。<br></li>
+<li>第四层是<strong>校验与兜底层</strong>：不要幻想一个超长 Prompt 一次解决所有问题。复杂任务我更倾向于拆成多步，例如“先判断是否有足够信息，再生成答案”<br></li>
+</ul>
+<p>核心一句话就是：<strong>长 Prompt 的核心不是“写短一点”，而是“把系统规则、任务说明、动态上下文、验证兜底分层治理”，必要时从单轮 Prompt 设计升级成多阶段工作流设计。</strong><br></p>
+<h2><span style="color: rgb(17, 124, 238)">【中等】</span>你会如何做 Prompt 版本管理？<br></h2>
+<p>我一般会把 Prompt 当成一种<strong>配置资产</strong>来做版本管理，而不是把它写死在代码里随便改。<br></p>
+<p>因为 Prompt 一旦进入生产环境，它其实会直接影响回答质量、工具调用、转人工判断，甚至业务指标，所以它需要像代码发布一样，做到<strong>可追踪、可灰度、可回滚</strong>。<br></p>
+<p>具体做法上，我通常会这样处理：<br></p>
+<h3>第一，按场景拆 Prompt。<br></h3>
+<p>我不会把所有逻辑都塞进一个超长 Prompt 里，而是拆成几个独立模块，比如意图识别、回复生成、情绪判断、知识库问答、营销建议这几类。这样每个 Prompt 都有自己的职责，后面改动影响面也更清晰。<br></p>
+<h3>第二，每个 Prompt 都有明确版本号。<br></h3>
+<p>比如我会用<code>intent-router-v1.2</code>、<code>reply-generator-v2.0</code>这种方式管理。每次改动不只是保存文本本身，还会把对应的模型参数、输出格式要求、是否绑定知识库、工具调用策略，一起当成这个版本的一部分。因为很多时候效果变了，不一定只是 Prompt 文字变了，也可能是温度、schema 或检索策略变了。<br></p>
+<h3>第三，改 Prompt 之前和之后都要做评测。<br></h3>
+<p>我不会凭感觉说“这版好像更好了”。一般会准备一批固定测试样本，覆盖正常问题、边界问题、异常输入，然后看几个关键指标，比如回答准确率、JSON 输出稳定性、拒答是否合理、转人工判断是否准确。如果离线评测没过，我不会直接上生产。<br></p>
+<h3>第四，上线走灰度，不直接全量。<br></h3>
+<p>比如先给 5% 或 10% 流量试跑，观察追问率、转人工率、满意度这些线上指标。如果效果变差，就直接切回上一版。这样做的好处是 Prompt 出问题时不需要重新发代码，回滚会更快。<br></p>
+<h3>第五，日志里一定会带版本信息。<br></h3>
+<p>像<code>prompt_version</code>、<code>model_version</code>、<code>kb_version</code>这些我都会埋进去。这样线上出问题时，能快速定位到底是哪一版 Prompt 导致的，而不是大家一起猜。<br></p>
+<p>PS：请注意！实际面试中不必全部回答。因为很难会有人把问题解答的那么清楚<br></p>
+<p><br></p>
+<h2><span style="color: rgb(17, 124, 238)">【中等】</span>如果一个 Prompt 在线上效果逐渐变差，你会怎么定位？<br></h2>
+<p>我一般不会一上来就改 Prompt，因为线上效果“逐渐变差”，很多时候不一定是 Prompt 本身坏了，而是整个输入环境变了。<br></p>
+<p>我会先做三件事。<br></p>
+<h3>第一，先把“变差”定义清楚。<br></h3>
+<p>比如到底是回答不准了、格式不稳定了、命中知识库变差了、转人工率变高了，还是用户追问变多了。因为不同指标对应的根因完全不一样。线上我通常会先看几个核心指标：任务成功率、格式解析成功率、用户追问率、人工兜底率、幻觉投诉率、首 token 延迟和整体 token 成本。<br></p>
+<h3>第二，我会做分维度切片，确认是不是 Prompt 问题，还是别的环节漂移了。<br></h3>
+<p>我一般按时间、模型版本、Prompt 版本、用户类型、问题类型、知识库版本、是否命中检索、上下文长度、工具调用成功率这些维度去切。因为很多所谓 Prompt 退化，最后查出来其实是这几类问题：<br></p>
+<ul>
+<li>用户问题分布变了，老 Prompt 只适合旧流量。<br></li>
+<li>RAG 召回质量变差了，模型拿到的是脏上下文。<br></li>
+<li>历史会话越积越长，关键指令被稀释，甚至被截断。<br></li>
+<li>模型偷偷升级了，或者参数变了，比如 temperature、max_tokens、response_format。<br></li>
+<li>工具返回 schema 变了，Prompt 还按旧字段在写。<br></li>
+<li>安全策略变严了，导致拒答率上升，但表面看像 Prompt 失效。<br></li>
+</ul>
+<h3>第三，我会做回放和对照实验。<br></h3>
+<p>我会把最近失败样本、过去成功样本各抽一批，做离线 replay，在尽量冻结环境的前提下对比：同样的问题，旧 Prompt + 旧模型什么效果，新 Prompt + 新模型什么效果；带检索和不带检索差多少；短上下文和长上下文差多少。这样能很快判断问题到底出在 Prompt 指令、检索内容、模型行为，还是会话上下文污染。<br></p>
+<p>如果定位下来真是 Prompt 本身不稳，我一般不会继续往一个超长 Prompt 里硬塞规则，而是会做拆分：把稳定规则放 system prompt，把场景策略做成模板化片段，把格式约束交给 schema 或程序校验，把高风险场景单独走子流程。这样比不断往一个大 Prompt 上打补丁更稳。<br></p>
+<p>线上处理上，我通常会先回滚到上一版稳定 Prompt，止损优先；然后补埋点、补 case、补评测集，再做灰度验证，不会直接全量上线。<br></p>
+<p>【面试官为什么会买账】因为这段回答不像“我会看看日志、调一调 Prompt”那么空。<br></p>
+<p>它有几个会让面试官觉得你做过线上系统的点：<br></p>
+<ul>
+<li>先定义“变差”是什么，而不是直接改 Prompt。<br></li>
+<li>知道 Prompt 只是链路里的一个环节，问题可能出在模型、RAG、上下文、工具调用。<br></li>
+<li>提到了按维度切片、离线回放、对照实验、灰度回滚，这些都是典型生产环境思路。<br></li>
+<li>知道“不要无限堆 Prompt”，而是要把规则、格式、流程拆到合适层级。<br></li>
+</ul>
+<p>【回答拆解】这道题背后主要考的是三件事：<br></p>
+<p>第一，你有没有线上定位问题的意识。不是会不会写 Prompt，而是出了问题你能不能系统性排查。<br></p>
+<p>第二，你有没有 AI 工程化视角。成熟的 AI 应用里，效果退化很少只靠一句 Prompt 解释，通常是多因素共同作用。<br></p>
+<p>第三，你知不知道怎么止损和闭环。真正稳的候选人，不只是能分析原因，还知道先回滚、再复盘、最后补评测。<br></p>
+<p>这段回答的结构其实很稳：<br></p>
+<p>先定指标再做切片再做回放最后给修复和治理方案<br></p>
+<p>这个结构很像真实线上排障，所以比单纯讲“优化提示词技巧”更有说服力。<br></p>
+<p>【项目结合讲法】如果你结合 AI 客服项目去讲，会更像你自己做过：<br></p>
+<p>我在 AI 客服项目里，如果发现某一版 Prompt 线上效果下降，我不会默认是文案写坏了。我会先看几个业务指标，比如解决率、转人工率、用户二次追问率、敏感问题误判率。然后我会去切场景，看是售前、售后、投诉、退款哪个环节掉得最明显。<br></p>
+<h2><span style="color: rgb(223, 42, 63)">【困难】</span>如果效果变差了，那么怎么判断是 prompt 的问题还是 RAG 的问题？<br></h2>
+<p>最核心的判断标准其实就一句话：<strong>模型拿到的上下文里，到底有没有足够且正确的答案证据。</strong><br></p>
+<p>如果检索出来的内容本身就不对、不全、没命中，那大概率是 RAG 的问题。如果检索内容其实已经对了，答案还是生成错、格式错、没按规则答，那更像是 Prompt 或生成层的问题。<br></p>
+<p>我通常会这样排：<br></p>
+<h3>第一步，先抽失败 case，看“证据是否充分”。<br></h3>
+<p>我会随机抽一批线上失败样本，人工看 3 件事：<br></p>
+<ul>
+<li>检索结果有没有命中正确文档；<br></li>
+<li>命中的 chunk 里有没有回答问题所需的关键信息；<br></li>
+<li>这些信息是否足够让模型安全作答。<br></li>
+</ul>
+<p>如果连证据都没给到模型，那就别急着改 Prompt，先查 RAG：分块、召回、重排、过滤、知识库时效性、embedding 是否漂移。<br></p>
+<h3>第二步，做三个对照实验。<br></h3>
+<p>这个是我最常用的。<br></p>
+<ul>
+<li><strong>去掉 RAG，只跑 Prompt</strong>看模型裸答表现。如果不用 RAG 反而更稳定，说明检索上下文可能在污染模型，问题偏 RAG。如果不用 RAG 也不行，那 Prompt 本身可能就不稳。<br></li>
+<li><strong>给模型喂“人工标注的正确上下文”</strong>也就是 oracle context。如果喂正确材料后效果明显恢复，说明生成链路没大问题，主要是 RAG 没把好材料送进去。如果喂了正确材料还是答不好，那就是 Prompt、输出约束、推理链路有问题。<br></li>
+<li><strong>固定检索结果，只替换 Prompt 版本</strong>同一批 query、同一批 context，只换 Prompt。如果结果差异很大，就是 Prompt 敏感；如果怎么换 Prompt 都救不回来，那问题更可能在检索侧。<br></li>
+</ul>
+<h3>第三步，再细分是 RAG 哪一层，还是 Prompt 哪一层。<br></h3>
+<p>如果是<strong>RAG 问题</strong>，我会继续拆成：<br></p>
+<ul>
+<li>是 query 改写有问题，导致搜偏了；<br></li>
+<li>还是 chunk 切得太碎，证据不完整；<br></li>
+<li>还是 topK 太小 / 重排失效，把正确内容压下去了；<br></li>
+<li>还是知识库过期、脏数据、版本混乱。<br></li>
+</ul>
+<p>如果是<strong>Prompt 问题</strong>，我会继续看：<br></p>
+<ul>
+<li>是系统指令太弱，被上下文淹没了；<br></li>
+<li>还是要求太多，长 Prompt 互相冲突；<br></li>
+<li>还是输出格式约束不够，导致模型自由发挥；<br></li>
+<li>还是没有明确规定“找不到就别编”。<br></li>
+</ul>
+<p>所以我自己的判断逻辑很简单：<strong>先判断“证据有没有送到模型面前”，再判断“模型拿到证据后有没有正确使用”。</strong>前者偏 RAG，后者偏 Prompt。<br></p>
+<p>如果线上要快速止损，我一般会先做两件事：<br></p>
+<ul>
+<li>一是回滚最近的检索配置或 Prompt 版本<br></li>
+<li>二是把高风险问题降级成“严格引用知识库，答不上来就转人工”，先把幻觉压住，再慢慢定位<br></li>
+</ul>
+<p><strong>总结来说，其实就一句话：</strong><br></p>
+<p>我判断 Prompt 还是 RAG 的核心方法，就是先看“正确证据有没有被检索并送到模型面前”，再用固定 context 换 Prompt、固定 Prompt 换 context 的对照实验去拆分：<strong>证据没到是 RAG 问题，证据到了还答不好，更多是 Prompt 或生成层的问题。</strong><br></p>
+<p>若有收获，就点个赞吧</p></article>
+</body>
+</html>

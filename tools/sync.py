@@ -5,11 +5,15 @@ from __future__ import annotations
 
 import argparse
 import html
+import re
 import shutil
 import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+
+GLOB_CHARS = frozenset("*?[]")
+ALIAS_PATTERN = re.compile(r"^@([A-Za-z0-9_.-]+)$")
 
 try:
     import yaml
@@ -29,6 +33,7 @@ class SyncEntry:
     source: str
     target: str
     mode: str
+    resolved_source: str = ""
 
 
 @dataclass
@@ -38,11 +43,129 @@ class NavItem:
     mode: str
 
 
-def load_config(config_path: Path) -> tuple[Path, list[SyncEntry]]:
+def load_aliases(source_root: Path, config_data: dict[str, Any]) -> dict[str, str]:
+    aliases: dict[str, str] = {}
+    inline = config_data.get("aliases") or {}
+    if isinstance(inline, dict):
+        for key, value in inline.items():
+            if value:
+                aliases[str(key)] = str(value).strip()
+
+    aliases_file = config_data.get("aliases_file")
+    if aliases_file:
+        alias_path = (source_root / str(aliases_file)).resolve()
+        if alias_path.is_file():
+            with alias_path.open(encoding="utf-8") as f:
+                file_data = yaml.safe_load(f) or {}
+            if isinstance(file_data, dict):
+                for key, value in file_data.items():
+                    if value and not str(key).startswith("#"):
+                        aliases[str(key)] = str(value).strip()
+    return aliases
+
+
+def resolve_source_ref(source: str, source_root: Path, aliases: dict[str, str]) -> str:
+    source = source.strip()
+    if not source:
+        return source
+
+    alias_match = ALIAS_PATTERN.match(source)
+    if alias_match:
+        alias_name = alias_match.group(1)
+        if alias_name not in aliases:
+            known = ", ".join(sorted(aliases)) or "(none)"
+            raise KeyError(f"Unknown alias '@{alias_name}'. Known aliases: {known}")
+        return aliases[alias_name]
+
+    path = Path(source)
+    if path.is_absolute():
+        return str(path.resolve())
+
+    return source
+
+
+def find_source_file(source_root: Path, source_ref: str) -> Path:
+    if any(ch in source_ref for ch in GLOB_CHARS):
+        matches = sorted(source_root.glob(source_ref))
+        files = [p for p in matches if p.is_file()]
+        if not files:
+            raise FileNotFoundError(f"No file matched glob: {source_ref}")
+        if len(files) > 1:
+            rel_paths = "\n".join(f"  - {p.relative_to(source_root)}" for p in files)
+            raise FileNotFoundError(
+                f"Glob matched multiple files ({source_ref}). "
+                f"Use a more specific pattern or @alias:\n{rel_paths}"
+            )
+        return files[0]
+
+    src = source_root / source_ref
+    if not src.is_file():
+        raise FileNotFoundError(f"Source not found: {source_ref}")
+    return src
+
+
+def auto_target_for_file(source_root: Path, file_path: Path) -> str:
+    rel = file_path.relative_to(source_root)
+    if rel.parent != Path("."):
+        return rel.parent.as_posix()
+    return rel.stem
+
+
+def expand_config_entry(
+    source_root: Path,
+    source: str,
+    target: str,
+    mode: str,
+    resolved_source: str,
+) -> list[SyncEntry]:
+    if not source:
+        return []
+
+    is_glob = any(ch in resolved_source for ch in GLOB_CHARS)
+
+    if not target and is_glob:
+        matches = sorted(source_root.glob(resolved_source))
+        files = [p for p in matches if p.is_file()]
+        if not files:
+            print(f"Warning: glob matched no files, skipped: {source}", file=sys.stderr)
+            return []
+        expanded: list[SyncEntry] = []
+        for file_path in files:
+            rel_source = file_path.relative_to(source_root).as_posix()
+            auto_target = auto_target_for_file(source_root, file_path)
+            expanded.append(
+                SyncEntry(
+                    source=source,
+                    target=auto_target,
+                    mode=mode,
+                    resolved_source=rel_source,
+                )
+            )
+        return expanded
+
+    if not target:
+        print(
+            f"Warning: skipped entry (missing target, not a glob): {source}",
+            file=sys.stderr,
+        )
+        return []
+
+    return [
+        SyncEntry(
+            source=source,
+            target=target,
+            mode=mode,
+            resolved_source=resolved_source,
+        )
+    ]
+
+
+def load_config(config_path: Path) -> tuple[Path, dict[str, str], list[SyncEntry]]:
     with config_path.open(encoding="utf-8") as f:
         data = yaml.safe_load(f) or {}
 
     source_root = (config_path.parent / data.get("source_root", "..")).resolve()
+    aliases = load_aliases(source_root, data)
     raw_entries = data.get("entries") or []
     entries: list[SyncEntry] = []
 
@@ -52,11 +175,14 @@ def load_config(config_path: Path) -> tuple[Path, list[SyncEntry]]:
         source = str(item.get("source", "")).strip()
         target = str(item.get("target", "")).strip()
         mode = str(item.get("mode", "copy")).strip().lower()
-        if not source or not target:
+        if not source:
             continue
-        entries.append(SyncEntry(source=source, target=target, mode=mode))
+        resolved_source = resolve_source_ref(source, source_root, aliases)
+        entries.extend(
+            expand_config_entry(source_root, source, target, mode, resolved_source)
+        )
 
-    return source_root, entries
+    return source_root, aliases, entries
 
 
 def reset_site_dir(site_dir: Path) -> None:
@@ -112,9 +238,7 @@ def sync_copy(src: Path, site_dir: Path, entry: SyncEntry) -> NavItem:
 
 
 def sync_entry(source_root: Path, site_dir: Path, entry: SyncEntry) -> NavItem:
-    src = source_root / entry.source
-    if not src.is_file():
-        raise FileNotFoundError(f"Source not found: {entry.source}")
+    src = find_source_file(source_root, entry.resolved_source or entry.source)
 
     mode = entry.mode
     if mode == "html":
@@ -200,14 +324,22 @@ def generate_index(site_dir: Path, nav_items: list[NavItem]) -> None:
     (site_dir / "index.html").write_text(page, encoding="utf-8")
 
 
+def format_source_label(entry: SyncEntry) -> str:
+    resolved = entry.resolved_source or entry.source
+    if entry.source != resolved:
+        return f"{entry.source} -> {resolved}"
+    return entry.source
+
+
 def run_sync(config_path: Path, site_dir: Path, strict: bool) -> int:
-    source_root, entries = load_config(config_path)
+    source_root, aliases, entries = load_config(config_path)
     if not entries:
         print("No entries found in publish.config.yaml")
         return 1
 
     print(f"Config: {config_path}")
     print(f"Source root: {source_root}")
+    print(f"Aliases loaded: {len(aliases)}")
     print(f"Site output: {site_dir}")
     print(f"Entries: {len(entries)}")
     print()
@@ -223,9 +355,9 @@ def run_sync(config_path: Path, site_dir: Path, strict: bool) -> int:
             item = sync_entry(source_root, site_dir, entry)
             nav_items.append(item)
             ok += 1
-            print(f"  OK  [{entry.mode}] {entry.source}")
+            print(f"  OK  [{entry.mode}] {format_source_label(entry)}")
         except Exception as exc:
-            msg = f"  FAIL [{entry.mode}] {entry.source} -> {exc}"
+            msg = f"  FAIL [{entry.mode}] {format_source_label(entry)} -> {exc}"
             print(msg)
             failed.append(msg)
             if strict:

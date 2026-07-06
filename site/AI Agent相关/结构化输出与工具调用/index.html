@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>结构化输出与工具调用</title>
+  <style>
+    body {
+      font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+      line-height: 1.75;
+      color: #1f2937;
+      background: #fff;
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 32px 24px 64px;
+    }
+    h1, h2, h3, h4, h5, h6 { line-height: 1.35; margin: 1.6em 0 0.6em; }
+    p { margin: 0.8em 0; }
+    ul, ol { padding-left: 1.4em; }
+    li { margin: 0.35em 0; }
+    code {
+      font-family: ui-monospace, Consolas, monospace;
+      background: #f3f4f6;
+      padding: 0.1em 0.35em;
+      border-radius: 4px;
+    }
+    pre {
+      background: #111827;
+      color: #f9fafb;
+      padding: 16px;
+      border-radius: 8px;
+      overflow-x: auto;
+    }
+    pre code { background: transparent; padding: 0; color: inherit; }
+    img { max-width: 100%; height: auto; border-radius: 8px; }
+    a { color: #2563eb; }
+  </style>
+</head>
+<body>
+  <article><h2><span style="color: rgb(116, 182, 2)">【简单】</span>什么是结构化输出？为什么 AI 系统经常要求模型输出 JSON？<br></h2>
+<p>我的理解，<strong>结构化输出</strong>就是不让模型“自由发挥地写一段话”，而是要求它按一个固定的数据结构返回结果。比如不是返回“这个用户情绪有点负面，建议人工介入”，而是返回：<br></p>
+<p>这样机器就能直接读这个结果，而不是再去猜模型这句话到底什么意思。<br></p>
+<p>至于为什么 AI 系统经常要求输出 JSON，本质上就一个原因：<strong>方便程序消费，方便系统集成，稳定性也更高。</strong><br></p>
+<p>因为在真实项目里，模型输出通常不是给人直接看的，而是要进入下一步流程。<br></p>
+<p>比如：前端渲染、后端入库、调用工具、触发工作流、做风控判断、走转人工，这些都需要明确字段<br></p>
+<p>如果模型每次都返回一大段自然语言，那程序还得再做一次解析，这样就特别容易出错。<br></p>
+<h2><span style="color: rgb(17, 124, 238)">【中等】</span>为什么不能完全相信模型返回的 JSON 一定合法？<br></h2>
+<p>因为大模型本质上还是<strong>按概率生成下一个 token</strong>，它不是一个真正的 JSON 编译器，也不是严格遵守语法的 parser。<br></p>
+<p>所以哪怕你在 Prompt 里写了很多遍“请严格输出 JSON”，它也只是“尽量像 JSON 一样输出”，不是从底层保证一定合法。<br></p>
+<p>所以我在项目里一般不会“相信模型”，而是把它当成一个<strong>可能输出脏数据的东西</strong>。标准做法通常是：<br></p>
+<ul>
+<li>先让模型尽量按 schema 输出<br></li>
+<li>程序侧做<code>JSON.parse</code><br></li>
+<li>再做 schema 校验，比如 Zod / JSON Schema<br></li>
+<li>不合法就重试、修复、降级或者走兜底<br></li>
+</ul>
+<p>如果是更严一点的场景，我会优先用<strong>structured output / function calling / response schema</strong>这类能力，而不是只靠 Prompt 嘴上要求。<br></p>
+<p>但是，即便用了这些能力，我也不会把程序侧校验去掉，因为线上还有截断、流式半包、模型拒答、工具返回污染这些问题。<br></p>
+<p>所以我的结论是：<br></p>
+<p><strong>不能完全相信模型返回的 JSON，一是因为它不是真正的语法执行器，二是因为“能 parse”不等于“字段正确”，三是因为“字段正确”也不等于“符合业务约束”。</strong><br></p>
+<p>生产里一定是“模型约束 + 程序校验 + 失败兜底”一起上。<br></p>
+<h2><span style="color: rgb(17, 124, 238)">【中等】</span>什么是 Function Calling？它和普通文本生成有什么区别？<br></h2>
+<p><strong>Function Calling</strong>本质上不是让模型“直接去执行函数”，而是<strong>让模型在合适的时候，按约定好的参数结构，产出一个工具调用意图</strong>。真正执行函数的，还是我们自己的应用程序或工具运行层。<br></p>
+<p>像 OpenAI 把它放在核心概念里，Anthropic 的 tool use 也是同一类思路：模型先返回结构化的工具调用，你的程序执行后，再把结果回给模型继续生成最终答案。<br></p>
+<p>它和普通文本生成最大的区别，一般是：<br></p>
+<ul>
+<li><strong>普通文本生成</strong>的目标是“生成一段像人话的内容”；<br></li>
+<li><strong>Function Calling</strong>的目标是“生成一个可被系统消费的动作指令”。<br></li>
+</ul>
+<p>比如用户说“帮我查一下订单 123 的状态”，普通文本生成可能回一段“我来帮你查”。但是 Function Calling 更理想的输出是类似<code>getOrderStatus({ orderId: &quot;123&quot; })</code>这种结构化调用，然后后端真的去查库，再把结果喂回模型。Anthropic 文档里明确写到，模型会根据工具描述决定是否调用工具，并返回<code>tool_use</code>，然后由应用执行，再回传<code>tool_result</code>。<br></p>
+<p>所以从工程上看，二者至少有四个关键差异。<br></p>
+<ul>
+<li>第一，<strong>输出目标不同</strong>：一个偏自然语言，一个偏结构化动作。<br></li>
+<li>第二，<strong>可控性不同</strong>：普通文本更自由，但更难稳定接系统；Function Calling 因为有参数 schema，稳定性通常更高。<br></li>
+<li>第三，<strong>系统边界不同</strong>：普通文本停留在“回答”；Function Calling 会把模型接到数据库、搜索、下单、发消息这些真实能力上。<br></li>
+<li>第四，<strong>风险模型不同</strong>：普通文本答错，很多时候只是说错话；Function Calling 如果参数错了，可能会查错数据、调错接口，所以一定要做参数校验和权限控制。官方文档也都把它和 structured outputs、tool use 放在一起讲，本质就是为了让模型输出更适合系统调用。<br></li>
+</ul>
+<p>他们各自的适应场景也不太一样：<br></p>
+<ul>
+<li><strong>Function Calling 适合“需要系统执行动作”的场景</strong><br></li>
+<li><strong>普通文本生成适合“只需要表达内容”的场景。</strong><br></li>
+</ul>
+<p>比如总结会议纪要、润色文案，这类纯文本任务没必要强上 Function Calling。但像查订单、创建工单、触发转人工、调用知识库搜索、执行 SQL 代理查询，这种就更适合走 Function Calling，因为链路更稳，也更容易做审计、回放和兜底。<br></p>
+<p><strong>最后一句话总结就是：</strong>Function Calling 就是让模型不只会“说答案”，还会按约定 schema 产出“该调用哪个工具、传什么参数”的结构化指令；它和普通文本生成最大的区别，是前者面向系统动作，后者面向自然语言表达。<br></p>
+<p><br></p>
+<h2><span style="color: rgb(223, 42, 63)">【困难】</span>如果模型误调用了工具，你会怎么防止系统出错？<br></h2>
+<p>首先要先明确一点，那就是：如果想要让模型永远不调错，那是<strong>不可能的。</strong><br></p>
+<p><strong>通常情况下，更靠谱的做法是把系统设计成：即使模型调错了，也最多失败，不要出事故。</strong><br></p>
+<p>我一般会做五层防线。<br></p>
+<h3>第一层是工具分级。<br></h3>
+<p>不是所有工具一个待遇。像搜索、查知识库、读状态，这种我会归到只读工具；像发消息、改数据、下单、退款，这种我会归到有副作用工具。只读工具可以相对放开一点，但有副作用工具必须更严，尤其是高影响、不可逆动作，要先验证再执行。OpenAI 的 GPT-5.4 提示指南也明确提到：对不可逆或高影响动作，要在执行前做验证。<br></p>
+<h3>第二层是执行前校验，而不是直接信模型。<br></h3>
+<p>模型返回 tool call，不要立刻执行，而是先过一层网关：<br></p>
+<ul>
+<li>校验工具名是不是允许调用<br></li>
+<li>校验参数 schema 对不对<br></li>
+<li>校验业务约束对不对，比如订单是不是这个用户的、金额是否超阈值、状态是否允许退款<br></li>
+<li>校验权限和租户隔离<br></li>
+</ul>
+<h3>第三层是确认机制。<br></h3>
+<p>凡是高风险工具，都要做二次确认。<br></p>
+<p>比如模型判断“应该调用 refundOrder”，系统不会直接退，而是先把它要做的事翻译成一句人能看懂的话：“准备为订单 xxx 发起退款，金额 xxx，是否确认？”<br></p>
+<p>用户确认了再执行。<br></p>
+<p>这个思路本质上也是把“生成动作意图”和“真正落地动作”拆开，避免模型一步到位直接误操作。<br></p>
+<h3>第四层是最小权限和最小工具暴露。<br></h3>
+<p>不要把所有工具都扔给一个 Agent。<br></p>
+<p>谁只需要查，就只给查；谁只需要读文件，就只给读文件的权限。<br></p>
+<p>A给每个子代理的工具访问范围限制到它实际需要的那部分。<br></p>
+<h3>第五层是幂等、补偿和审计。<br></h3>
+<p>就算前面都做了，线上还是可能因为重试、超时、网络抖动出问题，所以真正执行副作用工具时，我还会补三件事：<br></p>
+<ul>
+<li>幂等 key，避免重复扣款、重复发消息<br></li>
+<li>补偿机制，能撤销的尽量支持撤销<br></li>
+<li>全链路审计日志，记录“为什么调这个工具、参数是什么、谁确认的、执行结果是什么”这样就算出了问题，也能快速止损和追责。<br></li>
+</ul>
+<p>所以思路很明确：<strong>不要把安全寄托在模型不犯错，而要靠系统分层兜底。模型负责提议，系统负责验证，用户或规则负责授权，执行层负责幂等和回滚。</strong><br></p>
+<h2><span style="color: rgb(17, 124, 238)">【中等】</span>为什么很多 AI 项目会配合 Zod、JSON Schema 或 Pydantic 一起使用？<br></h2>
+<p>这个问题可以和上面的<a href="#SDOSk">为什么不能完全相信模型返回的 JSON 一定合法？</a>结合起来看。<br></p>
+<p>我们一定要知道模型输出的内容，从来都不是天然可信的数据。<br></p>
+<p>我们要把它当成一个一种<strong>可能格式对、也可能格式错，可能能 parse、也可能业务上根本不能用</strong>的外部输入。所以很多 AI 项目都会在模型和业务系统之间，再加一层 schema 和校验层。<br></p>
+<p>Zod 本质上是 TypeScript 优先的校验库，Pydantic 是 Python 里的数据校验模型库，而 JSON Schema 是描述和验证 JSON 结构的标准；OpenAI 的 Structured Outputs 以及 Function Calling 本身也都是围绕 JSON Schema 这套思路在做。<br></p>
+<p>如果面试中遇到这个问题，那么我们可以从以下四个方面去理解：<br></p>
+<h3>第一，做输出兜底。<br></h3>
+<p>模型就算按要求返回 JSON，也不代表一定合法，更不代表字段类型、枚举值、必填项、业务约束都对。JSON Schema 本身就是用来定义 JSON 的结构、约束和数据类型的<br></p>
+<p>Zod 可以直接<code>parse</code>做运行时校验<br></p>
+<p>Pydantic 也能校验 Python、JSON、字符串等输入，必要时还能加字段级、模型级校验。<br></p>
+<p>所以它们在 AI 项目里最直接的价值，就是把“模型返回了一段像数据的文本”，变成“系统确认这份数据真的能进下一步流程”。<br></p>
+<h3>第二，做单一事实源，减少重复定义。<br></h3>
+<p>真实项目里，一个结构往往会同时出现在很多地方：<br></p>
+<p>Prompt 约束、Structured Outputs、Function Calling 的参数定义、后端 DTO、前端渲染类型、日志埋点、评测字段。<br></p>
+<p>如果每层都手写一份，很快就会漂。<br></p>
+<p>OpenAI 官方文档现在就明确支持在 SDK 里直接用 Pydantic 和 Zod 来定义结构化输出；Pydantic 也能自动生成 JSON Schema；Zod 4 也支持原生转 JSON Schema。工程上这就很香：你可以用一份 schema，同时服务模型约束、程序校验和类型系统。<br></p>
+<h3>第三，方便接工具调用和工作流。<br></h3>
+<p>Function Calling 本质上就是让模型产出一个符合约束的工具参数，OpenAI 文档里也明确写了 function tools 是由 JSON Schema 定义的。<br></p>
+<p>那这样一来，Zod / Pydantic / JSON Schema 就不只是“校验模型输出”，而是在定义“模型能调用什么工具、参数长什么样、系统怎么验证再执行”。<br></p>
+<p>这对 Agent、审批流、工单流、RAG 后处理都很重要，因为你不是在消费一段自然语言，而是在消费一个会驱动系统动作的数据结构。<br></p>
+<h3>第四，把业务规则前移到类型和校验层。<br></h3>
+<p>很多错误不是 JSON 语法错，而是业务上不成立。<br></p>
+<p>比如<code>need_handoff</code>应该是布尔值，<code>risk_level</code>只能是固定枚举，或者某个字段存在时另一个字段必须同时存在。<br></p>
+<p>JSON Schema 本身支持定义结构、枚举、条件约束<br></p>
+<p>Pydantic 支持字段和模型级 validators<br></p>
+<p>Zod 也能做更复杂的 schema 组合。<br></p>
+<p>这样你就不是“等线上出 bug 再补 if”，而是让非法输出在进入业务之前就被拦住。<br></p>
+<p>所以我自己的结论是：<strong>这些库不是为了让 Prompt 看起来更高级，而是为了把模型输出从“文本”变成“可验证、可执行、可观测、可复用的系统输入”。</strong>AI 项目一旦要上线、要接工具、要进数据库、要驱动业务状态，这一层几乎就绕不过去。<br></p>
+<h2><span style="color: rgb(223, 42, 63)">【困难】</span>一个工具执行失败后，Agent 应该怎么恢复？<br></h2>
+<p>不要把“恢复”理解成简单重试一下。<br></p>
+<p>真正的恢复：<strong>更像生产环境的做法，是先判断失败类型，再走对应恢复策略</strong>。<br></p>
+<p>因为工具失败有很多种：<br></p>
+<ul>
+<li>有的是临时抖动<br></li>
+<li>有的是参数错了<br></li>
+<li>有的是缺用户信息<br></li>
+<li>有的是高风险动作根本不该自动继续<br></li>
+</ul>
+<p>LangGraph 官方就把这类错误分成几类：临时失败做重试，LLM 可恢复错误回到模型继续修正，用户可修复问题暂停等输入，意外错误再上抛调试。OpenAI 也建议给 Agent 设失败阈值，超过阈值就转人工。<br></p>
+<p>所以我自己的恢复策略通常是四步。<br></p>
+<h3>第一步，先做错误分类。<br></h3>
+<p>如果是 429、超时、偶发 5xx 这种基础设施类问题，我会当成 transient error，走有限次数重试 + 指数退避 + jitter。<br></p>
+<p>OpenAI 的 rate limit 指南明确建议这么做，而且强调要设置<strong>最大重试次数</strong>，不能无限打。<br></p>
+<p>如果不是系统抖动，而是<strong>参数不合法、字段缺失、工具选错</strong>，我不会盲重试，而是把错误结构化地喂回模型，让它基于上一次失败原因重新决策。这个其实属于“LLM-recoverable error”。Anthropic 也专门提到，很多工具错误来自无效参数，这时候更该修工具描述、schema 和示例，而不是一味重试。<br></p>
+<h3>第二步，恢复必须带状态，不能从头瞎跑。<br></h3>
+<p>如果 Agent 是多步流程，我会把每一步状态都持久化，比如当前节点、已成功的工具结果、失败原因、重试次数、用户上下文。<br></p>
+<p>LangGraph 的持久化和 durable execution 就是干这个的：它会在关键步骤保存 checkpoint，失败后可以从上一个成功步骤恢复，而不是把前面成功步骤全部重跑。<br></p>
+<h3>第三步，对有副作用的工具，不要默认自动恢复。<br></h3>
+<p>像退款、发券、改工单、发消息，这种工具失败后我不会简单 retry，因为你不知道上游到底是“没执行成功”，还是“执行成功了但回包丢了”。这类场景我会做两件事：<br></p>
+<ul>
+<li>一个是给工具调用加幂等键，避免重试导致重复扣款、重复发券<br></li>
+<li>另一个是把执行和确认拆开，高风险动作失败或多次异常时直接转人工，而不是让 Agent 自己硬闯。OpenAI 官方对高风险动作的建议也很明确：敏感、不可逆、高风险操作要有人类监督。<br></li>
+</ul>
+<h3>第四步，失败次数要有上限，超过上限就降级。<br></h3>
+<p>我一般会给每个工具配 retry budget，比如查询类工具 2 到 3 次，写操作 0 到 1 次；再配一个全局 max turns 或 failure threshold。<br></p>
+<p>超过阈值以后，不再让 Agent 自己循环，而是进入降级路径：<br></p>
+<ul>
+<li>换备用工具 / 备用模型<br></li>
+<li>返回部分结果<br></li>
+<li>请求用户补信息<br></li>
+<li>转人工<br></li>
+</ul>
+<p>所以总结一下，我心里的恢复不是“失败了再试一次”，而是：<strong>临时错误靠受控重试恢复，参数错误靠模型修正恢复，用户问题靠中断等待恢复，高风险问题靠人工接管恢复。</strong>再往底层一点，就是要靠<strong>状态持久化 + 幂等设计 + 明确的失败边界</strong>，这样 Agent 才不会一失败就乱掉。<br></p>
+<p><br></p>
+<h2><span style="color: rgb(17, 124, 238)">【中等】</span>什么是工具幂等性？为什么在 AI 系统里尤其重要？<br></h2>
+<p><strong>工具幂等性</strong>就是：<strong>同一个请求，重复执行一次和执行多次，最终结果应该一致，或者至少不会造成额外副作用。</strong><br></p>
+<p>比如“查订单状态”这种天然就是幂等的，你查 1 次和查 10 次，结果最多是读了一下数据，不会把系统状态改坏。但像“发优惠券”“创建工单”“发起退款”这种，如果没有幂等设计，模型一重试、网络一抖、Agent 一循环调用，就很容易重复执行，最后变成<strong>重复退款、重复发券、重复发消息</strong>。<br></p>
+<p>为什么在 AI 系统里尤其重要，我觉得有四个原因。<br></p>
+<h3>第一，AI 天然比传统程序更容易重复调用工具。<br></h3>
+<p>传统代码一般流程是写死的，但 Agent 场景下，模型会自己决定要不要调工具、调几次、是否重试。只要它判断不稳定一点，就可能出现连续调用同一个工具。<br></p>
+<h3>第二，AI 系统里“失败”不一定真失败。<br></h3>
+<p>比如工具其实已经执行成功了，但回包超时了，或者模型没拿到结果，它会以为没成功，然后再调一次。如果这时候工具不是幂等的，事故就出来了。<br></p>
+<h3>第三，多轮对话和断点恢复会放大这个问题。<br></h3>
+<p>比如会话中断、服务重启、任务恢复，系统可能从上一个 checkpoint 继续跑。如果恢复时把有副作用的工具又执行一遍，没有幂等保护，就会重复写入。<br></p>
+<h3>第四，模型本身不是完全可信的执行者。<br></h3>
+<p>它可能误判、误重试、进入循环，所以不能把安全建立在“模型不会重复调”这个假设上，而要建立在“就算它重复调，系统也别出事”这个前提上。<br></p>
+<p>所以在 AI 系统里，我一般会把工具分两类看：<br></p>
+<ul>
+<li><strong>只读工具</strong>像搜索、查库、查状态，这类风险相对小，但也要防止无意义重复调用带来的成本和时延浪费。<br></li>
+<li><strong>有副作用工具</strong>像退款、下单、发消息、写数据库、创建工单，这类必须重点做幂等。常见做法就是给每次业务动作一个<strong>幂等键</strong>，比如<code>requestId / operationId / businessId</code>，服务端收到后先查这个键有没有处理过，处理过就直接返回上次结果，而不是再执行一次。<br></li>
+</ul>
+<p>所以如果面试官问我一句话，我会说：<strong>工具幂等性本质上是在防“重复执行带来的副作用”，而 AI 系统因为会重试、会误调用、会断点恢复，所以比传统系统更依赖幂等设计。</strong><br></p>
+<p><br></p>
+<h2><span style="color: rgb(223, 42, 63)">【困难】</span>Function Calling 和 MCP Tool 在工程落地上有什么差异？<br></h2>
+<p><strong>Function Calling 更像“模型调用我应用里的函数接口”</strong><br></p>
+<p><strong>MCP Tool 更像“我接入了一个标准化的外部工具协议生态”。</strong><br></p>
+<p>两者都能让模型调工具，但工程边界完全不一样。<br></p>
+<p>OpenAI 官方把它们明确区分开：<br></p>
+<ul>
+<li>Function Calling 是你在请求里直接提供函数定义<br></li>
+<li>MCP/Connectors 则是通过<code>mcp</code>工具类型去接远端 MCP server 或 OpenAI 维护的 connector。MCP 官方文档也把自己定义成一个开放协议，除了 tools，还包括 resources、prompts、lifecycle、capability negotiation 和 transport/auth。更加具体的大家可以查看<a href="https://www.yuque.com/lgdsunday/ydo65y/zug6bm6uczn37hfa">MCP 协议详解</a><br></li>
+</ul>
+<p>如果从工程落地看，我会从 6 个维度来区分。<br></p>
+<h3>第一，系统边界不一样。<br></h3>
+<p>Function Calling 通常是我在当前应用里，把工具 schema 直接塞给模型，模型返回结构化调用，我自己的应用代码去执行，再把结果回传给模型。这种模式下，工具、权限、执行、日志基本都在我自己的服务边界内。<br></p>
+<p>Anthropic 的工具文档也明确说，client tools 是模型返回<code>tool_use</code>，由你的应用执行，再把<code>tool_result</code>回给模型。<br></p>
+<p>MCP 则是 client 和 MCP server 之间通过协议通信，server 可以是本地进程，也可以是远端 HTTP 服务，且有明确的初始化、能力协商、会话生命周期。<br></p>
+<h3>第二，接入成本和复杂度不一样。<br></h3>
+<p>Function Calling 上手最快，尤其适合你已经有后端能力，只是想让模型调用几个内部 API 的场景。<br></p>
+<p>你定义 JSON Schema，接个执行循环就能跑起来。<br></p>
+<p>MCP 工程量更大，因为你不是只定义一个函数，而是在建一个协议服务：要考虑 server 实现、传输层、认证授权、工具发现、能力声明、可能的工具变更通知，远端场景还要管 OAuth 或其他鉴权。<br></p>
+<p>MCP 架构文档明确写了它有 data layer 和 transport layer，支持 stdio 和 streamable HTTP，并推荐 OAuth；OpenAI 的 MCP/Connectors 文档也写到 remote MCP server 往往需要<code>server_url</code>和 OAuth<code>authorization</code>。<br></p>
+<h3>第三，可复用性和生态位不一样。<br></h3>
+<p>Function Calling 更偏“当前 Agent / 当前应用内的局部集成”。<br></p>
+<p>如果我今天在自己的 AI 客服系统里接退款、查订单、发工单，Function Calling 往往已经够了。<br></p>
+<p>MCP 更适合“把能力做成标准化可复用服务”，因为一个 MCP server 暴露出来之后，可以被 Claude、ChatGPT、IDE、内部 Agent 平台等不同客户端复用。<br></p>
+<p>OpenAI 官方已经支持 remote MCP servers 和 connectors；Anthropic 也单独提供了 MCP 接入文档；MCP 官方则把它定位成连接 AI 应用和外部系统的开放标准。<br></p>
+<h3>第四，能力模型不一样。<br></h3>
+<p>Function Calling 的核心是“工具调用”，重点在于函数名、描述、参数 schema。<br></p>
+<p>MCP 不只是工具调用，它还可以暴露 resources、prompts，甚至支持 server 向 client 请求 sampling、elicitation、logging 等能力。<br></p>
+<p>也就是说，MCP 不是单纯的 tool schema，而是一整套“模型上下文和工具互操作协议”。<br></p>
+<p>所以如果你的需求只是“让模型调几个内部动作”，用 MCP 可能有点重；但如果你要做统一的知识接入、提示模板下发、工具生态开放，MCP 的上限更高。<br></p>
+<h3>第五，安全治理方式不一样。<br></h3>
+<p>Function Calling 的安全更多是应用内治理：schema 校验、参数校验、RBAC、租户隔离、幂等、审计，都是你自己兜。<br></p>
+<p>MCP 除了这些，还多了一层“协议级”和“跨系统”治理，比如服务器鉴权、工具暴露范围、是否 require approval、客户端对工具调用的确认、server 的能力声明、甚至动态工具列表变化。<br></p>
+<p>MCP 工具规范明确建议 human in the loop，给用户清楚展示暴露了哪些工具，并对操作做确认；OpenAI 的 MCP guide 也支持<code>require_approval</code>。<br></p>
+<h3>第六，调试和运维方式不一样。<br></h3>
+<p>Function Calling 更像单体应用里的一个 agent loop，问题通常集中在 tool description、schema、参数构造、执行器和重试策略上。<br></p>
+<p>MCP 则更像“一个分布式接入层”，你除了看模型是否选对工具，还要看 client/server 生命周期、网络传输、鉴权是否过期、server 是否实现了兼容 schema、内容数组是否返回正确、不同客户端对同一 server 的兼容性。<br></p>
+<p>OpenAI 的 MCP server guide 甚至会要求工具结果按 MCP 的 content array 返回；ChatGPT Apps 场景里，MCP server 还可能同时承载 tool + UI template + structuredContent。<br></p>
+<p>总结来说一句就是：<strong>内部业务闭环、工具数量可控、强调低复杂度和快速上线，我优先 Function Calling；要做跨模型、跨客户端、跨团队复用的工具平台，或者想把 tools/resources/prompts 统一标准化，我会考虑 MCP。</strong>不是谁替代谁，更像是一个偏“应用内集成”，一个偏“协议化平台接入”<br></p>
+<p><br></p>
+<p>若有收获，就点个赞吧</p></article>
+</body>
+</html>
