@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vue</title>
+  <style>
+    body {
+      font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+      line-height: 1.75;
+      color: #1f2937;
+      background: #fff;
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 32px 24px 64px;
+    }
+    h1, h2, h3, h4, h5, h6 { line-height: 1.35; margin: 1.6em 0 0.6em; }
+    p { margin: 0.8em 0; }
+    ul, ol { padding-left: 1.4em; }
+    li { margin: 0.35em 0; }
+    code {
+      font-family: ui-monospace, Consolas, monospace;
+      background: #f3f4f6;
+      padding: 0.1em 0.35em;
+      border-radius: 4px;
+    }
+    pre {
+      background: #111827;
+      color: #f9fafb;
+      padding: 16px;
+      border-radius: 8px;
+      overflow-x: auto;
+    }
+    pre code { background: transparent; padding: 0; color: inherit; }
+    img { max-width: 100%; height: auto; border-radius: 8px; }
+    a { color: #2563eb; }
+  </style>
+</head>
+<body>
+  <article><p>Vue3 源码面试题：<a href="https://www.yuque.com/lgdsunday/cbt5mq/ue6z4zcrg98v5ng2">https://www.yuque.com/lgdsunday/cbt5mq/ue6z4zcrg98v5ng2</a><br></p>
+<h2><span style="color: rgb(223, 42, 63)">【困难】</span>Vue2 中的响应式实现方案有什么缺点？<br></h2>
+<p>Vue 2 中的响应式实现方案有一些缺点，这些缺点可能会在某些情况下对开发过程和性能产生影响。以下是一些Vue 2中响应式实现的主要缺点：<br></p>
+<ul>
+<li><strong>初始化性能开销</strong>:<br></li>
+<li>Vue 2的响应式系统在初始化时需要为每个数据属性创建getter和setter，这会导致初始化性能开销较大，特别是当数据对象非常大或嵌套层次很深时。<br></li>
+<li><strong>不支持新增属性的响应</strong>:<br></li>
+<li>一旦一个对象被Vue实例化，它的属性就会被加入响应系统。这意味着如果你想要让一个新属性具有响应性，你必须在对象初始化时定义它，否则它将不会具有响应性。这对于动态添加属性时可能会导致问题。<br></li>
+<li><strong>递归嵌套限制</strong>:<br></li>
+<li>Vue 2的响应式系统在处理嵌套对象或数组时，会有一些限制。嵌套层次过深时，可能会导致性能问题或栈溢出错误。<br></li>
+<li><strong>跟踪不可枚举属性的困难</strong>:<br></li>
+<li>Vue 2无法直接监视对象的不可枚举属性，因为它们无法被getter和setter劫持。这可能导致需要通过<code>Vue.set</code>方法来设置响应式属性，增加了一些复杂性。<br></li>
+<li><strong>无法跟踪数组索引和长度的变化</strong>:<br></li>
+<li>Vue 2的响应式系统可以跟踪数组的变化，但对于数组索引和长度的变化并不敏感，因此需要使用特定的数组方法（如<code>push</code>、<code>pop</code>、<code>shift</code>、<code>unshift</code>、<code>splice</code>）来触发响应。<br></li>
+<li><strong>性能优化挑战</strong>:<br></li>
+<li>在某些情况下，Vue 2的响应式系统可能导致不必要的重新渲染和更新。为了解决性能问题，需要手动使用<code>shouldComponentUpdate（React 方法）</code>或<code>computed</code>属性来进行性能优化。<br></li>
+<li><strong>难以调试</strong>:<br></li>
+<li>当在开发过程中遇到响应式问题时，调试可能会有挑战。Vue 2的响应式系统在内部使用getter和setter来追踪变化，这可能使问题的定位和调试变得复杂。<br></li>
+</ul>
+<p><br></p>
+<p>需要注意的是，虽然Vue 2的响应式实现有一些缺点，但它仍然是一个功能强大的框架，并且在大多数应用中表现出色。随着Vue 3的发布，许多这些问题已经得到了解决，Vue 3引入了更快的响应式系统和更多的优化，以解决上述问题。因此，如果你在新项目中使用Vue，建议考虑使用Vue 3以获得更好的性能和开发体验。<br></p>
+<p><br></p>
+<h2><span style="color: rgb(116, 182, 2)">【简单】</span>Vue 中如何全局注册组件<br></h2>
+<p>在 Vue 中，你可以全局注册组件以便在整个应用程序中重复使用它们。<br></p>
+<p>其中 Vue2 和 Vue3 的全局注册方式是不一样的：<br></p>
+<h3>Vue2<br></h3>
+<p>在 Vue2 中，利用<code>Vue.component</code>方法完成全局注册<br></p>
+<h3>Vue3<br></h3>
+<p>在 Vue3 中，需要通过<code>app.component</code>完成全局注册<br></p>
+<p><br></p>
+<h2><span style="color: rgb(17, 124, 238)">【中等】</span>Element 中如何完成的组件全局注册？<br></h2>
+<p><code>Element</code>通过<code>app.use</code>的方式进行组件的全局注册。其中<code>.use</code>方法是<code>Vue</code>中用来<a href="https://cn.vuejs.org/api/application.html#app-use">注册插件</a>的方法。<br></p>
+<p>所谓插件，本质上是一个对象或者函数。<br></p>
+<ul>
+<li>如果是一个对象的话，那么这个对象必须要提供<code>install</code>方法。这个<code>install</code>方法会被<code>vue</code>自动调用<br></li>
+<li>如果是一个函数的话，那么这个函数会被直接作为<code>install</code>方法。被直接调用<br></li>
+</ul>
+<p>在<code>install</code>方法中会接收一个<code>app</code>的参数，该参数即为<code>Vue</code>的唯一实例。<br></p>
+<p>所以，在<code>Element</code>中就可以利用<code>install</code>函数直接完成全局注册。<code>Element</code>的代码如下（<a href="https://github.com/ElemeFE/element/blob/dev/src/index.js#L183-L189">链接地址</a>）：<br></p>
+<p>[图片]<br></p>
+<p><br></p>
+<h2><span style="color: rgb(116, 182, 2)">【简单】</span>如何注册自定义指令？<br></h2>
+<p>在 Vue 中，你可以自定义指令以扩展 Vue 的功能。<br></p>
+<p>指令是带有<code>v-</code>前缀的特殊属性，它们用于操作 DOM 元素，添加响应式行为或执行一些自定义操作。<br></p>
+<p>你可以使用<code>Vue.directive</code>方法来注册自定义指令。以下是一个创建和使用自定义指令的基本步骤：<br></p>
+<ul>
+<li><strong>创建自定义指令</strong>：使用<code>Vue.directive</code>方法创建自定义指令。该方法接受两个参数，第一个参数是指令的名称，第二个参数是一个对象，包含一些生命周期钩子和方法。<br></li>
+<li><strong>定义指令的钩子函数</strong>：在上述对象中，你可以定义一些生命周期钩子函数，例如<code>bind</code>、<code>inserted</code>、<code>update</code>、<code>componentUpdated</code>和<code>unbind</code>。这些钩子函数允许你在不同的生命周期阶段执行操作。以下是一些常用的指令钩子函数：<br></li>
+<li><code>bind</code>：只调用一次，当指令绑定到元素时执行。<br></li>
+<li><code>inserted</code>：被绑定元素插入父节点时执行。<br></li>
+<li><code>update</code>：组件更新时执行，但可能在其子组件更新之前。<br></li>
+<li><code>componentUpdated</code>：组件及其子组件全部更新后执行。<br></li>
+<li><code>unbind</code>：只调用一次，当指令与元素解绑时执行。<br></li>
+<li><strong>在 Vue 模板中使用指令</strong>：在 Vue 模板中使用自定义指令时，使用<code>v-</code>前缀后跟指令的名称。例如，如果你的自定义指令名称是&quot;my-directive&quot;，你可以在模板中这样使用它：<code>&lt;div v-my-directive=&quot;someValue&quot;&gt;&lt;/div&gt;</code>。<br></li>
+</ul>
+<p>以下是一个简单的示例，演示如何创建和使用一个名为&quot;v-highlight&quot;的自定义指令，用于高亮元素的背景颜色：<br></p>
+<p>在上面的示例中，我们创建了一个名为&quot;v-highlight&quot;的自定义指令，它在<code>bind</code>钩子函数中将元素的背景颜色设置为指令的值。然后，我们在组件模板中使用这个自定义指令来高亮一个<code>&lt;div&gt;</code>元素的背景颜色。<br></p>
+<p><br></p>
+<p>自定义指令可以根据你的需求执行各种不同的 DOM 操作和响应式行为，允许你在 Vue 应用中添加自定义功能。<br></p>
+<p><br></p>
+<h2><span style="color: rgb(116, 182, 2)">【简单】</span>如何定义过滤器<br></h2>
+<p>在 Vue 中，你可以定义过滤器来处理文本的输出，例如格式化日期、字符串转换、数值处理等。<br></p>
+<p>过滤器以管道符（<code>|</code>）的形式应用于模板表达式，用于对绑定的数据进行处理。<br></p>
+<p>以下是如何定义和使用过滤器的基本步骤：<br></p>
+<ul>
+<li><strong>定义过滤器</strong>：使用<code>Vue.filter</code>方法来定义过滤器。该方法接受两个参数，第一个参数是过滤器的名称，第二个参数是一个函数，该函数接受输入数据并返回处理后的输出数据。<br></li>
+<li><strong>在模板中使用过滤器</strong>：在模板表达式中使用管道符（<code>|</code>）将过滤器应用于绑定的数据。<br></li>
+</ul>
+<p>以下是一个简单的示例，演示如何定义和使用一个名为<code>&quot;capitalize&quot;</code>的过滤器来将文本转换为首字母大写：<br></p>
+<p><br></p>
+<p>在上面的示例中，我们首先使用<code>Vue.filter</code>方法定义了一个名为<code>&quot;capitalize&quot;</code>的过滤器，它接受一个字符串作为输入，并返回首字母大写的字符串。<br></p>
+<p>然后，在组件的模板中，我们使用管道符（<code>|</code>）将过滤器应用于<code>message</code>变量，以便将其首字母大写。<br></p>
+<p>你还可以传递参数给过滤器，例如：<br></p>
+<p>在这种情况下，你可以在过滤器函数中接收额外的参数。<br></p>
+<p>定义和使用过滤器可以使你的模板更具可读性，同时允许你在模板中以一种简洁的方式执行文本处理和格式化操作。<br></p>
+<h2><span style="color: rgb(17, 124, 238)">【中等】</span>Vue3 中为什么删除了过滤器？<br></h2>
+<p>在 Vue 2 中，过滤器是一种用于处理模板中文本格式化的功能。<br></p>
+<p>然而，在 Vue 3 中，过滤器被删除，这是因为过滤器的功能可以用更强大的方式来实现，而且存在一些设计和性能方面的问题，因此它们被认为不再是 Vue 核心功能的一部分。<br></p>
+<p>以下是一些关于为什么删除过滤器的原因：<br></p>
+<ul>
+<li>可复用性和维护性：Vue 2 的过滤器虽然能够格式化文本，但它们在组件之间的共享和复用性方面有一些限制。通过删除过滤器，Vue 3 鼓励开发者使用函数或计算属性等更灵活的方式来实现相同的功能，这有助于更好地组织和维护代码。<br></li>
+<li>性能问题：在 Vue 2 中，过滤器会在每次渲染时都被调用，这可能导致性能问题，尤其是当过滤器被频繁使用时。通过使用计算属性或函数，你可以更精确地控制何时触发计算，避免不必要的计算。<br></li>
+<li>可读性和维护性：过滤器的语法可能会导致模板变得复杂和难以理解，特别是在具有多个嵌套过滤器的情况下。通过将逻辑移到组件的计算属性或方法中，可以提高代码的可读性和维护性。<br></li>
+<li>更灵活的实现：通过使用函数或计算属性，你可以实现比过滤器更复杂的逻辑，包括异步操作和动态参数传递。这使得实现更灵活，能够满足更广泛的需求。<br></li>
+</ul>
+<p>尽管 Vue 3 中删除了过滤器，但仍然可以在项目中使用类似的功能，只需使用计算属性、方法或函数来处理文本格式化的需求。这种做法不仅更强大和灵活，还有助于提高代码的可维护性和性能。如果你之前使用过过滤器，可以考虑将其替换为计算属性或方法，以适应 Vue 3 的新特性。<br></p>
+<p><br></p>
+<h2><span style="color: rgb(17, 124, 238)">【中等】</span>Vue3 使用了什么替换的过滤器？<br></h2>
+<p>Vue 3 中，过滤器被计算属性（Computed Properties）、方法（Methods）、函数、<strong>全局属性（重点）</strong>来替代。这些替代方案提供了更灵活的方式来处理文本格式化和数据转换的需求。以下是如何使用这些替代方案来实现与过滤器类似的功能：<br></p>
+<p>PS：方法一般指的是对象的属性，而函数一般指的是一个单独的 function 函数。<br></p>
+<p>例如:<br></p>
+<p><code>const obj = { say: () =&gt; { console.log('hello') } }</code>这就是方法<br></p>
+<p><code>function say () { console.log('hello') }</code>这就是函数<br></p>
+<p><br></p>
+<ul>
+<li><strong>计算属性（Computed Properties）</strong>：<br></li>
+<li>计算属性允许你定义在模板中可以直接使用的计算属性。它们会自动根据它们依赖的数据属性进行更新，类似于过滤器的自动更新。<br></li>
+<li><strong>方法（Methods）（在 vue 中，这种操作一般被称之为方法，但是有些时候也会被叫做函数）</strong>：<br></li>
+<li>方法允许你在模板中调用函数来处理数据。方法与计算属性不同，它们不会缓存结果，每次调用都会执行函数。<br></li>
+<li><a href="https://cn.vuejs.org/api/application.html#app-config-globalproperties">全局属性</a><br></li>
+<li>全局属性是一个特别好的替换过滤器的方式，他可以在一处注册，全局进行使用<br></li>
+</ul>
+<p>这些替代方案提供了更灵活的方法来处理数据的格式化和转换需求，而不像过滤器那样受限于特定的语法和自动更新机制。<br></p>
+<p>根据项目的需求，你可以选择使用计算属性、方法、函数、全局属性，以满足不同的场景。这样的灵活性有助于提高代码的可维护性和可读性。<br></p>
+<p><br></p>
+<h2><span style="color: rgb(223, 42, 63)">【困难】</span>vuex和pinia的区别，为什么要设计pinia<br></h2>
+<p>这是挺有意思的问题，很多同学可能只会用 pinia，对这个问题还真不太清楚。<br></p>
+<p>所以大部分的回答就是：<strong>pinia 支持 compositionAPI 了，并且没有 mutation 了</strong>。<br></p>
+<p>但是这样的回答是 完全八股文化，是<strong>很难</strong>得到大厂面试官认可的。<br></p>
+<p>那么，想要回答好这个问题，就首先需要知道<strong>为什么 vuex 要设计 mutation，为什么 pinia 就不需要 mutation 了？</strong><br></p>
+<h3>针对 vuex<br></h3>
+<p>针对于 vuex 很多同学都知道，它必须要通过 state 表示数据，通过 mutation 修改数据，通过 action 处理异步。<br></p>
+<p>那么可以在 vuex 里面直接通过 state 修改数据吗？比如：<code>store.state.count += 1</code>。<br></p>
+<p>答案是<strong>可以的</strong>！ 这样修改的数据依然具备响应式。只不过这样做 不推荐 而已。<br></p>
+<p>那么为什么不推荐呢？其实，必须要使用 mutation 修改数据的原因是因为：所有的数据变化必须是有迹可循（在 VueDevTools 中可以被跟踪）的。<br></p>
+<p>以此为目标，如果直接修改了 state 则 VueDevTools 无法跟踪对应的变化。<br></p>
+<p>而 mutation 仅支持同步的操作，原因也与此有关。如果 mutation 的操作变成了异步的，则在 VueDevTools 中呈现 mutation 时，数据可能尚未发生变化。这就会导致 VueDevTools 呈现不准确。<br></p>
+<p>因此，综合来说：之所以设计 mutation 的概念，本质上是为了 可以在<code>VueDevTools</code>中监听数据变化。<br></p>
+<h3>针对 pinia<br></h3>
+<p>那么，接下来咱们说<code>pinia</code>。<br></p>
+<p>pinia 取消了 mutation 的概念，原因就是因为：<strong>pinia 直接修改 state，在 vueDevTools 中依然可以监听到变化</strong>。所以，mutation 的存在就没有必要了。<br></p>
+<p>那么为什么直接修改也可以监听了呢？因为 pinia 的响应式依赖了 Vue3 的 reactive 和 ref 响应式系统，Proxy 直接实现对所有属性的深度监听。所以 直接修改 state（如 this.count++）也能被 Devtools 正确追踪 了<br></p>
+<p><br></p>
+<h2><span style="color: rgb(17, 124, 238)">【中等】</span>v-if 和 v-show 的区别？在什么情况下使用 v-if，什么情况使用 v-show<br></h2>
+<p><code>Vue</code>官方中对<code>v-if</code>和<code>v-show</code>的使用场景区分是：当需要频繁显示和隐藏的时候，那么需要使用<code>v-show</code>否则需要使用<code>v-if</code>。<br></p>
+<p>但是在实际的开发中我们是<strong>无法分辨一个场景（Dialog）是否是频繁切换的。</strong><br></p>
+<p><strong>假如：有一个《添加用户》的按钮，点击这个按钮，弹出一个 dialog 完成添加用户的操作。</strong><br></p>
+<p><strong>那么当前的操作是频繁的还是不频繁的呢？</strong><br></p>
+<p><strong>这是无法进行判断的。</strong><br></p>
+<p>所以说，在实际开发中，判断<code>v-if</code>和<code>v-show</code>的使用需要根据它们的特性来进行判断。<br></p>
+<p><code>v-show</code>不会导致组件被销毁和渲染，但是<code>v-if</code>会导致组件被销毁和重新渲染。<br></p>
+<p>也就是说：<strong>当使用</strong><code>v-show</code><strong>时，虽然用户看不到组件，但是当前组件的生命周期都已经执行了。如果在</strong><code>created</code><strong>中存在接口的调用，则【接口已经调用完成】。同时，当组件隐藏时，组件并不会销毁。</strong>相反：<strong>如果是</strong><code>v-if</code><strong>的每次点击时都会重新渲染组件，重新执行生命周期，隐藏则销毁组件。</strong><br></p>
+<p>所以说，判断<code>v-if</code>和<code>v-show</code>的使用条件应该是：<strong>当组件需要在指定时机创建，在指定时机销毁时，需要使用</strong><code>v-if</code><strong>。而 当组件仅需要创建一次时，则可以使用</strong><code>v-show</code><strong>。</strong><br></p>
+<p><br></p>
+<h2><span style="color: rgb(223, 42, 63)">【困难】</span>v-if 和 v-show 的底层代码是如何实现的？<br></h2>
+<p>这个解释可以分为简单解释和复杂解释两种。<br></p>
+<h3>简单解释<br></h3>
+<p>要从 Vue.js 的源码层面分析<code>v-if</code>和<code>v-show</code>的实现，需要深入了解 Vue.js 的虚拟DOM和渲染过程。以下是对这两个指令的实现进行简要的源码层面的分析：<br></p>
+<p><code>v-if</code><strong>的源码实现</strong>：<br></p>
+<ul>
+<li>当解析模板时，遇到<code>v-if</code>指令，Vue.js会在虚拟DOM中创建一个条件节点，这个条件节点包含了条件表达式和一个分支节点。<br></li>
+<li>当组件渲染时，Vue.js会评估<code>v-if</code>表达式的值。如果条件为<code>true</code>，则会渲染分支节点，否则忽略。<br></li>
+<li>如果条件为<code>true</code>，分支节点会被渲染为真实DOM并插入到页面中。如果条件为<code>false</code>，则分支节点不会被渲染，相应的DOM元素也不会出现在页面上。<br></li>
+<li>当条件从<code>true</code>切换到<code>false</code>或从<code>false</code>切换到<code>true</code>时，Vue.js会管理虚拟DOM的更新，销毁或创建相应的组件实例，以确保正确的DOM操作。<br></li>
+</ul>
+<p><code>v-show</code><strong>的源码实现</strong>：<br></p>
+<ul>
+<li>当解析模板时，遇到<code>v-show</code>指令，Vue.js会在虚拟DOM中创建一个普通节点。<br></li>
+<li>在组件渲染时，无论<code>v-show</code>表达式的值是<code>true</code>还是<code>false</code>，普通节点都会被渲染为真实DOM。<br></li>
+<li>如果<code>v-show</code>的表达式为<code>true</code>，普通节点渲染为真实DOM后，Vue.js会将其显示，即将其CSS的<code>display</code>属性设置为合适的值（通常是<code>block</code>）。<br></li>
+<li>如果<code>v-show</code>的表达式为<code>false</code>，普通节点渲染为真实DOM后，Vue.js会将其隐藏，即将其CSS的<code>display</code>属性设置为<code>none</code>，从而使其不可见。<br></li>
+</ul>
+<p>需要注意的是，<code>v-show</code>的元素在DOM中保持不变，只是通过CSS来。<br></p>
+<h3>复杂解释（具有难度，通常情况下简单的解释即可）<br></h3>
+<p>如果简单解释无法让面试官满意，那么可以通过复杂解释 。<strong>复杂解释难度可能会有些高</strong><br></p>
+<h4><span style="color: rgb(44, 62, 80)">v-if</span><br></h4>
+<p><span style="color: rgb(44, 62, 80)">在</span><code>Vue</code><span style="color: rgb(44, 62, 80)">中，一个模版会经历</span><code>baseParse</code><span style="color: rgb(44, 62, 80)">、</span><code>transform</code><span style="color: rgb(44, 62, 80)">、</span><code>generate</code><span style="color: rgb(44, 62, 80)">这三个过程，最后由</span><code>generate</code><span style="color: rgb(44, 62, 80)">生成可以执行的代码（</span><code>render</code><span style="color: rgb(44, 62, 80)">函数）。</span><br></p>
+<p><span style="color: rgb(44, 62, 80)">我们可以直接在</span><a href="https://vue-next-template-explorer.netlify.app/"><strong>Vue3 Template Explore</strong></a><span style="color: rgb(44, 62, 80)">输入一个使用</span><span style="color: var(--c-text-light)">v-if</span><span style="color: rgb(44, 62, 80)">指令的栗子：</span><br></p>
+<p><span style="color: rgb(44, 62, 80)">然后，由它编译生成的</span><span style="color: var(--c-text-light)">render</span><span style="color: rgb(44, 62, 80)">函数会是这样：</span><br></p>
+<p><span style="color: rgb(44, 62, 80)">可以看到，一个简单的使用</span><span style="color: var(--c-text-light)">v-if</span><span style="color: rgb(44, 62, 80)">指令的模版编译生成的</span><span style="color: var(--c-text-light)">render</span><span style="color: rgb(44, 62, 80)">函数最终会返回一个</span><span style="color: rgb(44, 62, 80)"><strong>三目运算表达式</strong></span><span style="color: rgb(44, 62, 80)">。首先，让我们先来认识一下其中几个变量和函数的意义：</span><br></p>
+<ul>
+<li><span style="color: var(--c-text-light)">_ctx</span><span style="color: rgb(44, 62, 80)">当前组件实例的上下文，即</span><span style="color: var(--c-text-light)">this</span><br></li>
+<li><span style="color: var(--c-text-light)">_openBlock()</span><span style="color: rgb(44, 62, 80)">和</span><span style="color: var(--c-text-light)">_createBlock()</span><span style="color: rgb(44, 62, 80)">用于构造</span><span style="color: var(--c-text-light)">Block Tree</span><span style="color: rgb(44, 62, 80)">和</span><span style="color: var(--c-text-light)">Block VNode</span><span style="color: rgb(44, 62, 80)">，它们主要用于靶向更新过程</span><br></li>
+<li><span style="color: var(--c-text-light)">_createCommentVNode()</span><span style="color: rgb(44, 62, 80)">创建注释节点的函数，通常用于占位</span><br></li>
+</ul>
+<p><span style="color: rgb(44, 62, 80)">显然，如果当</span><span style="color: var(--c-text-light)">visible</span><span style="color: rgb(44, 62, 80)">为</span><span style="color: var(--c-text-light)">false</span><span style="color: rgb(44, 62, 80)">的时候，会在当前模版中创建一个</span><span style="color: rgb(44, 62, 80)"><strong>注释节点</strong></span><span style="color: rgb(44, 62, 80)">（也可称为占位节点），反之则创建一个真实节点（即它自己）。例如当</span><span style="color: var(--c-text-light)">visible</span><span style="color: rgb(44, 62, 80)">为</span><span style="color: var(--c-text-light)">false</span><span style="color: rgb(44, 62, 80)">时渲染到页面上会是这样：</span><br></p>
+<p>[图片]<br></p>
+<p><span style="color: rgb(153, 153, 153)">在 Vue 中很多地方都运用了注释节点来作为</span><span style="color: rgb(153, 153, 153)"><strong>占位节点</strong></span><span style="color: rgb(153, 153, 153)">，其目的是在不展示该元素的时候，标识其</span><span style="color: rgb(153, 153, 153)"><strong>在页面中的位置</strong></span><span style="color: rgb(153, 153, 153)">，以便在</span><code>patch</code><span style="color: rgb(153, 153, 153)">的时候将该元素放回该位置。</span><br></p>
+<p><span style="color: rgb(44, 62, 80)">那么，这个时候我想大家就会抛出一个疑问：当</span><code>visible</code><span style="color: rgb(44, 62, 80)">动态切换</span><code>true</code><span style="color: rgb(44, 62, 80)">或</span><code>false</code><span style="color: rgb(44, 62, 80)">的这个过程（派发更新）究竟发生了什么？</span><br></p>
+<h5><span style="color: rgb(44, 62, 80)">派发更新时 patch，更新节点</span><br></h5>
+<p><span style="color: rgb(44, 62, 80)">在 Vue 3 中总共有四种指令：</span><code>v-on</code><span style="color: rgb(44, 62, 80)">、</span><code>v-model</code><span style="color: rgb(44, 62, 80)">、</span><code>v-show</code><span style="color: rgb(44, 62, 80)">和</span><code>v-if</code><span style="color: rgb(44, 62, 80)">。</span><br></p>
+<p><span style="color: rgb(44, 62, 80)">但是，实际上在源码中，只针对前面三者</span><span style="color: rgb(44, 62, 80)"><strong>进行了特殊处理</strong></span><span style="color: rgb(44, 62, 80)">，这可以在</span><code>packages/runtime-dom/src/directives</code><span style="color: rgb(44, 62, 80)">目录下的文件看出：</span><br></p>
+<p><span style="color: rgb(44, 62, 80)">而针对</span><code>v-if</code><span style="color: rgb(44, 62, 80)">指令是直接走派发更新过程时</span><code>patch</code><span style="color: rgb(44, 62, 80)">的逻辑。由于</span><code>v-if</code><span style="color: rgb(44, 62, 80)">指令订阅了</span><code>visible</code><span style="color: rgb(44, 62, 80)">变量，所以当</span><code>visible</code><span style="color: rgb(44, 62, 80)">变化的时候，则会触发</span><span style="color: rgb(44, 62, 80)"><strong>派发更新</strong></span><span style="color: rgb(44, 62, 80)">，即</span><code>Proxy</code><span style="color: rgb(44, 62, 80)">对象的</span><code>set</code><span style="color: rgb(44, 62, 80)">逻辑，最后会命中</span><code>componentEffect</code><span style="color: rgb(44, 62, 80)">的逻辑。</span><br></p>
+<p><span style="color: rgb(153, 153, 153)">当然，我们也可以称这个过程为组件的更新过程</span><br></p>
+<p><span style="color: rgb(44, 62, 80)">这里，我们来看一下</span><code>componentEffect</code><span style="color: rgb(44, 62, 80)">的定义（伪代码）：</span><br></p>
+<p><span style="color: rgb(44, 62, 80)">可以看到，当</span><span style="color: rgb(44, 62, 80)"><strong>组件还没挂载时</strong></span><span style="color: rgb(44, 62, 80)">，即第一次触发派发更新会命中</span><span style="color: var(--c-text-light)">!instance.isMounted</span><span style="color: rgb(44, 62, 80)">的逻辑。而对于我们这个栗子，则会命中</span><span style="color: var(--c-text-light)">else</span><span style="color: rgb(44, 62, 80)">的逻辑，即组件更新，主要会做三件事：</span><br></p>
+<ul>
+<li><span style="color: rgb(44, 62, 80)">获取当前组件对应的组件树</span><span style="color: var(--c-text-light)">nextTree</span><span style="color: rgb(44, 62, 80)">和之前的组件树</span><span style="color: var(--c-text-light)">prevTree</span><br></li>
+<li><span style="color: rgb(44, 62, 80)">更新当前组件实例</span><span style="color: var(--c-text-light)">instance</span><span style="color: rgb(44, 62, 80)">的组件树</span><span style="color: var(--c-text-light)">subTree</span><span style="color: rgb(44, 62, 80)">为</span><span style="color: var(--c-text-light)">nextTree</span><br></li>
+<li><span style="color: var(--c-text-light)">patch</span><span style="color: rgb(44, 62, 80)">新旧组件树</span><span style="color: var(--c-text-light)">prevTree</span><span style="color: rgb(44, 62, 80)">和</span><span style="color: var(--c-text-light)">nextTree</span><span style="color: rgb(44, 62, 80)">，如果存在</span><span style="color: var(--c-text-light)">dynamicChildren</span><span style="color: rgb(44, 62, 80)">，即</span><span style="color: var(--c-text-light)">Block Tree</span><span style="color: rgb(44, 62, 80)">，则会命中靶向更新的逻辑，显然我们此时满足条件</span><br></li>
+</ul>
+<p><span style="color: rgb(153, 153, 153)">注：组件树则指的是该组件对应的 VNode Tree。</span><br></p>
+<h5><span style="color: rgb(44, 62, 80)">总结</span><br></h5>
+<p><span style="color: rgb(44, 62, 80)">总体来看，</span><span style="color: var(--c-text-light)">v-if</span><span style="color: rgb(44, 62, 80)">指令的实现较为简单，基于</span><span style="color: rgb(44, 62, 80)"><strong>数据驱动</strong></span><span style="color: rgb(44, 62, 80)">的理念，当</span><span style="color: var(--c-text-light)">v-if</span><span style="color: rgb(44, 62, 80)">指令对应的</span><span style="color: var(--c-text-light)">value</span><span style="color: rgb(44, 62, 80)">为</span><span style="color: var(--c-text-light)">false</span><span style="color: rgb(44, 62, 80)">的时候会</span><span style="color: rgb(44, 62, 80)"><strong>预先创建一个注释节</strong></span><span style="color: rgb(44, 62, 80)">点在该位置，然后在</span><span style="color: var(--c-text-light)">value</span><span style="color: rgb(44, 62, 80)">发生变化时，命中派发更新的逻辑，对新旧组件树进行</span><span style="color: var(--c-text-light)">patch</span><span style="color: rgb(44, 62, 80)">，从而完成使用</span><span style="color: var(--c-text-light)">v-if</span><span style="color: rgb(44, 62, 80)">指令元素的动态显示隐藏。</span><br></p>
+<h4><span style="color: rgb(44, 62, 80)">v-show</span><br></h4>
+<p><span style="color: rgb(44, 62, 80)">同样地，对于</span><code>v-show</code><span style="color: rgb(44, 62, 80)">指令，我们在</span><code>Vue 3</code><span style="color: rgb(44, 62, 80)">在线模版编译平台输入这样一个栗子：</span><br></p>
+<p><span style="color: rgb(44, 62, 80)">那么，由它编译生成的</span><code>render</code><span style="color: rgb(44, 62, 80)">函数：</span><br></p>
+<p><span style="color: rgb(44, 62, 80)">此时，这个栗子在</span><code>visible</code><span style="color: rgb(44, 62, 80)">为</span><code>false</code><span style="color: rgb(44, 62, 80)">时，渲染到页面上的</span><code>HTML</code><span style="color: rgb(44, 62, 80)">：</span><br></p>
+<p>[图片]<br></p>
+<p><span style="color: rgb(44, 62, 80)">从上面的</span><code>render</code><span style="color: rgb(44, 62, 80)">函数可以看出，不同于</span><code>v-if</code><span style="color: rgb(44, 62, 80)">的三目运算符表达式，</span><code>v-show</code><span style="color: rgb(44, 62, 80)">的</span><code>render</code><span style="color: rgb(44, 62, 80)">函数返回的是</span><code>_withDirectives()</code><span style="color: rgb(44, 62, 80)">函数的执行。</span><br></p>
+<p><span style="color: rgb(44, 62, 80)">前面，我们已经简单介绍了</span><code>_openBlock()</code><span style="color: rgb(44, 62, 80)">和</span><code>_createBlock()</code><span style="color: rgb(44, 62, 80)">函数。那么，除开这两者，接下来我们逐点分析一下这个</span><code>render</code><span style="color: rgb(44, 62, 80)">函数，首当其冲的是</span><code>vShow</code><span style="color: rgb(44, 62, 80)">～</span><br></p>
+<h5><span style="color: rgb(44, 62, 80)">vShow 在生命周期中改变 display 属性</span><br></h5>
+<p><code>_vShow</code><span style="color: rgb(44, 62, 80)">在源码中则对应着</span><code>vShow</code><span style="color: rgb(44, 62, 80)">，它被定义在</span><code>packages/runtime-dom/src/directives/vShow</code><span style="color: rgb(44, 62, 80)">。它的职责是对</span><code>v-show</code><span style="color: rgb(44, 62, 80)">指令进行</span><span style="color: rgb(44, 62, 80)"><strong>特殊处理</strong></span><span style="color: rgb(44, 62, 80)">，主要表现在</span><code>beforeMount 、 mounted 、 updated 、 beforeUnMount</code><span style="color: rgb(44, 62, 80)">这四个生命周期中：</span><br></p>
+<p><span style="color: rgb(44, 62, 80)">对于</span><code>v-show</code><span style="color: rgb(44, 62, 80)">指令会处理两个逻辑：普通</span><code>v-show</code><span style="color: rgb(44, 62, 80)">或</span><code>transition</code><span style="color: rgb(44, 62, 80)">时的</span><code>v-show</code><span style="color: rgb(44, 62, 80)">情况。通常情况下我们只是使用</span><code>v-show</code><span style="color: rgb(44, 62, 80)">指令，</span><span style="color: rgb(44, 62, 80)"><strong>命中的就是前者</strong></span><span style="color: rgb(44, 62, 80)">。</span><br></p>
+<p><span style="color: rgb(153, 153, 153)">这里我们只对普通</span><span style="color: var(--c-text-light)">v-show</span><span style="color: rgb(153, 153, 153)">情况展开分析。</span><br></p>
+<p><span style="color: rgb(44, 62, 80)">普通</span><code>v-show</code><span style="color: rgb(44, 62, 80)">情况，都是调用的</span><code>setDisplay()</code><span style="color: rgb(44, 62, 80)">函数，以及会传入两个变量：</span><br></p>
+<ul>
+<li><code>el</code><span style="color: rgb(44, 62, 80)">当前使用</span><code>v-show</code><span style="color: rgb(44, 62, 80)">指令的</span><span style="color: rgb(44, 62, 80)"><strong>真实元素</strong></span><br></li>
+<li><code>v-show</code><span style="color: rgb(44, 62, 80)">指令对应的</span><code>value</code><span style="color: rgb(44, 62, 80)">的值</span><br></li>
+</ul>
+<p><span style="color: rgb(44, 62, 80)">接着，我们来看一下</span><code>setDisplay()</code><span style="color: rgb(44, 62, 80)">函数的定义：</span><br></p>
+<p><code>setDisplay()</code><span style="color: rgb(44, 62, 80)">函数正如它本身</span><span style="color: rgb(44, 62, 80)"><strong>命名的语意</strong></span><span style="color: rgb(44, 62, 80)">一样，是通过改变该元素的</span><code>CSS</code><span style="color: rgb(44, 62, 80)">属性</span><code>display</code><span style="color: rgb(44, 62, 80)">的值来动态的控制</span><code>v-show</code><span style="color: rgb(44, 62, 80)">绑定的元素的</span><span style="color: rgb(44, 62, 80)"><strong>显示</strong></span><span style="color: rgb(44, 62, 80)">或隐藏。</span><br></p>
+<p><span style="color: rgb(44, 62, 80)">并且，我想大家可能注意到了，当</span><code>value</code><span style="color: rgb(44, 62, 80)">为</span><code>true</code><span style="color: rgb(44, 62, 80)">的时候，</span><code>display</code><span style="color: rgb(44, 62, 80)">是等于的</span><code>el.vod</code><span style="color: rgb(44, 62, 80)">，而</span><code>el.vod</code><span style="color: rgb(44, 62, 80)">则等于这个真实元素的</span><code>CSS display</code><span style="color: rgb(44, 62, 80)">属性（默认情况下为空）。所以，当</span><code>v-show</code><span style="color: rgb(44, 62, 80)">对应的</span><code>value</code><span style="color: rgb(44, 62, 80)">为</span><code>true</code><span style="color: rgb(44, 62, 80)">的时候，</span><span style="color: rgb(44, 62, 80)"><strong>元素显示与否是取决于它本身</strong></span><span style="color: rgb(44, 62, 80)">的</span><code>CSS display</code><span style="color: rgb(44, 62, 80)">属性。</span><br></p>
+<p><span style="color: rgb(153, 153, 153)">其实，到这里</span><code>v-show</code><span style="color: rgb(153, 153, 153)">指令的本质在源码中的体现已经出来了。但是，仍然会留有一些疑问，例如</span><code>withDirectives</code><span style="color: rgb(153, 153, 153)">做了什么？</span><code>vShow</code><span style="color: rgb(153, 153, 153)">在生命周期中对</span><code>v-show</code><span style="color: rgb(153, 153, 153)">指令的处理又是如何运用的？</span><br></p>
+<p><br></p>
+<h5><span style="color: rgb(44, 62, 80)">withDirectives 在 VNode 上增加 dir 属性</span><br></h5>
+<p><code>withDirectives()</code><span style="color: rgb(44, 62, 80)">顾名思义和指令相关，即在</span><code>Vue 3</code><span style="color: rgb(44, 62, 80)">中和指令相关的元素，最后生成的</span><code>render</code><span style="color: rgb(44, 62, 80)">函数都会调用</span><code>withDirectives()</code><span style="color: rgb(44, 62, 80)">处理指令相关的逻辑，</span><span style="color: rgb(44, 62, 80)"><strong>将</strong></span><code>vShow</code><span style="color: rgb(44, 62, 80)"><strong>的逻辑作为</strong></span><code>dir</code><span style="color: rgb(44, 62, 80)"><strong>属性添加</strong></span><span style="color: rgb(44, 62, 80)">到</span><code>VNode</code><span style="color: rgb(44, 62, 80)">上。</span><br></p>
+<p><code>withDirectives()</code><span style="color: rgb(44, 62, 80)">函数的定义：</span><br></p>
+<p><span style="color: rgb(44, 62, 80)">首先，</span><code>withDirectives()</code><span style="color: rgb(44, 62, 80)">会获取当前渲染实例处理</span><span style="color: rgb(44, 62, 80)"><strong>边缘条件</strong></span><span style="color: rgb(44, 62, 80)">，即如果在</span><code>render</code><span style="color: rgb(44, 62, 80)">函数外面使用</span><code>withDirectives()</code><span style="color: rgb(44, 62, 80)">则会抛出异常：</span><br></p>
+<p><span style="color: rgb(153, 153, 153)">&quot;withDirectives can only be used inside render functions.&quot;</span><br></p>
+<p><span style="color: rgb(44, 62, 80)">然后，在</span><code>vnode</code><span style="color: rgb(44, 62, 80)">上绑定</span><code>dirs</code><span style="color: rgb(44, 62, 80)">属性，并且遍历传入的</span><code>directives</code><span style="color: rgb(44, 62, 80)">数组，而对于我们这个栗子</span><code>directives</code><span style="color: rgb(44, 62, 80)">就是：</span><br></p>
+<p><br></p>
+<p><span style="color: rgb(44, 62, 80)">显然此时只会</span><span style="color: rgb(44, 62, 80)"><strong>迭代一次</strong></span><span style="color: rgb(44, 62, 80)">（数组长度为 1）。并且从</span><code>render</code><span style="color: rgb(44, 62, 80)">传入的 参数可以知道，从</span><code>directives</code><span style="color: rgb(44, 62, 80)">上解构出的</span><code>dir</code><span style="color: rgb(44, 62, 80)">指的是</span><code>_vShow</code><span style="color: rgb(44, 62, 80)">，即我们上面介绍的</span><code>vShow</code><span style="color: rgb(44, 62, 80)">。由于</span><code>vShow</code><span style="color: rgb(44, 62, 80)">是一个对象，所以会重新构造</span><code>（ bindings.push() ）</code><span style="color: rgb(44, 62, 80)">一个</span><code>dir</code><span style="color: rgb(44, 62, 80)">给</span><code>VNode.dir</code><span style="color: rgb(44, 62, 80)">。</span><br></p>
+<p><code>VNode.dir</code><span style="color: rgb(44, 62, 80)">的作用体现在</span><code>vShow</code><span style="color: rgb(44, 62, 80)">在生命周期改变元素的</span><code>CSS display</code><span style="color: rgb(44, 62, 80)">属性，而这些</span><span style="color: rgb(44, 62, 80)"><strong>生命周期会作为派发更新的结束回调被调用</strong></span><span style="color: rgb(44, 62, 80)">。</span><br></p>
+<p><span style="color: rgb(153, 153, 153)">接下来，我们一起来看看其中的调用细节～</span><br></p>
+<h5><span style="color: rgb(44, 62, 80)">派发更新时 patch，注册</span><span style="color: var(--c-text-light)">postRenderEffect</span><span style="color: rgb(44, 62, 80)">事件</span><br></h5>
+<p><span style="color: rgb(44, 62, 80)">相信大家应该都知道</span><code>Vue 3</code><span style="color: rgb(44, 62, 80)">提出了</span><code>patchFlag</code><span style="color: rgb(44, 62, 80)">的概念，其用来针对不同的场景来执行对应的</span><code>patch</code><span style="color: rgb(44, 62, 80)">逻辑。那么，对于上面这个栗子，我们会命中</span><code>patchElement</code><span style="color: rgb(44, 62, 80)">的逻辑。</span><br></p>
+<p><span style="color: rgb(44, 62, 80)">而对于</span><code>v-show</code><span style="color: rgb(44, 62, 80)">之类的指令来说，由于</span><code>Vnode.dir</code><span style="color: rgb(44, 62, 80)">上绑定了处理元素</span><code>CSS display</code><span style="color: rgb(44, 62, 80)">属性的相关逻辑（</span><code>vShow</code><span style="color: rgb(44, 62, 80)">定义好的生命周期处理）。所以，此时</span><code>patchElement()</code><span style="color: rgb(44, 62, 80)">中会为注册一个</span><code>postRenderEffect</code><span style="color: rgb(44, 62, 80)">事件。</span><br></p>
+<p><span style="color: rgb(44, 62, 80)">这里我们简单分析一下</span><code>queuePostRenderEffect()</code><span style="color: rgb(44, 62, 80)">和</span><code>invokeDirectiveHook()</code><span style="color: rgb(44, 62, 80)">函数：</span><br></p>
+<ul>
+<li><code>queuePostRenderEffect()</code><span style="color: rgb(44, 62, 80)">，</span><code>postRenderEffect</code><span style="color: rgb(44, 62, 80)">事件注册是通过</span><code>queuePostRenderEffect()</code><span style="color: rgb(44, 62, 80)">函数完成的，因为</span><code>effect</code><span style="color: rgb(44, 62, 80)">都是维护在一个队列中（为了保持</span><code>effect</code><span style="color: rgb(44, 62, 80)">的有序），这里是</span><code>pendingPostFlushCbs</code><span style="color: rgb(44, 62, 80)">，所以对于</span><code>postRenderEffect</code><span style="color: rgb(44, 62, 80)">也是一样的会被</span><span style="color: rgb(44, 62, 80)"><strong>进队</strong></span><br></li>
+<li><span style="color: var(--c-text-light)">i</span><code>nvokeDirectiveHook()</code><span style="color: rgb(44, 62, 80)">，由于</span><code>vShow</code><span style="color: rgb(44, 62, 80)">封装了对元素</span><code>CSS display</code><span style="color: rgb(44, 62, 80)">属性的处理，所以</span><code>invokeDirective()</code><span style="color: rgb(44, 62, 80)">的本职是调用指令相关的生命周期处理。并且，需要注意的是此时是</span><span style="color: rgb(44, 62, 80)"><strong>更新逻辑</strong></span><span style="color: rgb(44, 62, 80)">，所以</span><span style="color: rgb(44, 62, 80)"><strong>只会调用</strong></span><code>vShow</code><span style="color: rgb(44, 62, 80)"><strong>中定义好的</strong></span><code>update</code><span style="color: rgb(44, 62, 80)"><strong>生命周期</strong></span><br></li>
+</ul>
+<h5><code>flushJobs</code><span style="color: rgb(44, 62, 80)">的结束（</span><code>finally</code><span style="color: rgb(44, 62, 80)">）调用</span><code>postRenderEffect</code><br></h5>
+<p><span style="color: rgb(44, 62, 80)">到这里，我们已经围绕</span><code>v-Show</code><span style="color: rgb(44, 62, 80)">介绍完了</span><code>vShow</code><span style="color: rgb(44, 62, 80)">、</span><code>withDirectives</code><span style="color: rgb(44, 62, 80)">、</span><code>postRenderEffect</code><span style="color: rgb(44, 62, 80)">等概念。但是，万事具备只欠东风，还缺少一个</span><span style="color: rgb(44, 62, 80)"><strong>调用</strong></span><code>postRenderEffect</code><span style="color: rgb(44, 62, 80)"><strong>事件的时机</strong></span><span style="color: rgb(44, 62, 80)">，即处理</span><code>pendingPostFlushCbs</code><span style="color: rgb(44, 62, 80)">队列的时机。</span><br></p>
+<p><span style="color: rgb(44, 62, 80)">在 Vue 3 中</span><code>effect</code><span style="color: rgb(44, 62, 80)">相当于 Vue 2.x 的</span><code>watch</code><span style="color: rgb(44, 62, 80)">。虽然变了个命名，但是仍然保持着一样的调用方式，都是调用的</span><code>run()</code><span style="color: rgb(44, 62, 80)">函数，然后由</span><code>flushJobs</code><span style="color: var(--c-text-light)">()</span><span style="color: rgb(44, 62, 80)">执行</span><code>effect</code><span style="color: rgb(44, 62, 80)">队列。而调用</span><code>postRenderEffect</code><span style="color: rgb(44, 62, 80)">事件的时机</span><span style="color: rgb(44, 62, 80)"><strong>则是在执行队列的结束</strong></span><span style="color: rgb(44, 62, 80)">。</span><br></p>
+<p><span style="color: var(--c-text-light)">f</span><code>lushJobs()</code><span style="color: rgb(44, 62, 80)">函数的定义：</span><br></p>
+<p><span style="color: rgb(44, 62, 80)">在</span><code>flushJobs()</code><span style="color: rgb(44, 62, 80)">函数中会执行三种</span><code>effect</code><span style="color: rgb(44, 62, 80)">队列，分别是</span><code>preRenderEffect</code><span style="color: rgb(44, 62, 80)">、</span><code>renderEffect</code><span style="color: rgb(44, 62, 80)">、</span><code>postRenderEffect</code><span style="color: rgb(44, 62, 80)">，它们各自对应</span><code>flushPreFlushCbs()</code><span style="color: rgb(44, 62, 80)">、</span><code>queue</code><span style="color: rgb(44, 62, 80)">、</span><code>flushPostFlushCbs</code><span style="color: rgb(44, 62, 80)">。</span><br></p>
+<p><span style="color: rgb(44, 62, 80)">那么，显然</span><code>postRenderEffect</code><span style="color: rgb(44, 62, 80)">事件的</span><span style="color: rgb(44, 62, 80)"><strong>调用时机</strong></span><span style="color: rgb(44, 62, 80)">是在</span><code>flushPostFlushCbs()</code><span style="color: rgb(44, 62, 80)">。而</span><code>flushPostFlushCbs()</code><span style="color: rgb(44, 62, 80)">内部则会遍历</span><code>pendingPostFlushCbs</code><span style="color: rgb(44, 62, 80)">队列，即执行之前在</span><code>patchElement</code><span style="color: rgb(44, 62, 80)">时注册的</span><code>postRenderEffect</code><span style="color: rgb(44, 62, 80)">事件，</span><span style="color: rgb(44, 62, 80)"><strong>本质上就是执行</strong></span><span style="color: rgb(44, 62, 80)">：</span><br></p>
+<p><br></p>
+<h5><span style="color: rgb(44, 62, 80)">总结</span><br></h5>
+<p><span style="color: rgb(44, 62, 80)">相比较</span><span style="color: var(--c-text-light)">v-if</span><span style="color: rgb(44, 62, 80)">简单干脆地通过</span><span style="color: var(--c-text-light)">patch</span><span style="color: rgb(44, 62, 80)">直接更新元素，</span><span style="color: var(--c-text-light)">v-show</span><span style="color: rgb(44, 62, 80)">的处理就略显复杂。这里我们重新梳理一下整个过程：</span><br></p>
+<ul>
+<li><span style="color: rgb(44, 62, 80)">首先，由</span><span style="color: var(--c-text-light)">widthDirectives</span><span style="color: rgb(44, 62, 80)">来生成最终的</span><span style="color: var(--c-text-light)">VNode</span><span style="color: rgb(44, 62, 80)">。它会给</span><span style="color: var(--c-text-light)">VNode</span><span style="color: rgb(44, 62, 80)">上绑定</span><span style="color: var(--c-text-light)">dir</span><span style="color: rgb(44, 62, 80)">属性，即</span><span style="color: var(--c-text-light)">vShow</span><span style="color: rgb(44, 62, 80)">定义的在生命周期中对元素 CSS</span><span style="color: var(--c-text-light)">display</span><span style="color: rgb(44, 62, 80)">属性的处理</span><br></li>
+<li><span style="color: rgb(44, 62, 80)">其次，在</span><span style="color: var(--c-text-light)">patchElement</span><span style="color: rgb(44, 62, 80)">的阶段，会注册</span><span style="color: var(--c-text-light)">postRenderEffect</span><span style="color: rgb(44, 62, 80)">事件，用于调用</span><span style="color: var(--c-text-light)">vShow</span><span style="color: rgb(44, 62, 80)">定义的</span><span style="color: var(--c-text-light)">update</span><span style="color: rgb(44, 62, 80)">生命周期处理 CSS</span><span style="color: var(--c-text-light)">display</span><span style="color: rgb(44, 62, 80)">属性的逻辑</span><br></li>
+<li><span style="color: rgb(44, 62, 80)">最后，在派发更新的结束，调用</span><span style="color: var(--c-text-light)">postRenderEffect</span><span style="color: rgb(44, 62, 80)">事件，即执行</span><span style="color: var(--c-text-light)">vShow</span><span style="color: rgb(44, 62, 80)">定义的</span><span style="color: var(--c-text-light)">update</span><span style="color: rgb(44, 62, 80)">生命周期，更改元素的 CSS</span><span style="color: var(--c-text-light)">display</span><span style="color: rgb(44, 62, 80)">属性</span><br></li>
+</ul>
+<p><br></p>
+<h2><span style="color: rgb(223, 42, 63)">【困难】</span>v-memo 指令的作用是什么？<br></h2>
+<p><code>v-memo</code><span style="color: rgb(37, 41, 51)">是</span><code>vue 3.2</code><span style="color: rgb(37, 41, 51)">新增的指令。</span><br></p>
+<p>一听这名字, 用过react的同学肯定想到了<code>useMemo</code>。没错，这是一个<strong>性能优化的指令</strong>。<br></p>
+<p><span style="color: rgb(37, 41, 51)">官方文档里是这样描述的：</span><br></p>
+<p>缓存一个模板的子树。在元素和组件上都可以使用。<br></p>
+<p>为了实现缓存，该指令需要传入一个固定长度的依赖值数组进行比较。<br></p>
+<p>如果数组里的每个值都与最后一次的渲染相同，那么整个子树的更新将被跳过.<br></p>
+<p><span style="color: rgb(37, 41, 51)"><strong>简单的说, 就是</strong></span><code>v-memo</code><span style="color: rgb(37, 41, 51)"><strong>中依赖的值若不发生变化，当前</strong></span><code>DOM</code><span style="color: rgb(37, 41, 51)"><strong>及整个</strong></span><code>子树DOM</code><span style="color: rgb(37, 41, 51)"><strong>都不会重新渲染, 会使用最后一次缓存的结果。它会存储先前渲染的结果以加速未来的渲染。</strong></span><br></p>
+<p>听到这, 心想, 这不就是<code>computed</code>嘛。事实上，<strong>v-memo 可以看作是模板部分的计算属性</strong><br></p>
+<p><code>v-memo</code>接受一个数组，咱们通过两个案例来测试下它的作用。<br></p>
+<h3>示例一：<span style="color: rgb(37, 41, 51)">空的依赖项数组</span><br></h3>
+<p>如果传入一个空的依赖项数组, 他将永远不会重新渲染，永远使用第一次渲染的缓存结果, 和<code>v-once</code>类似<br></p>
+<h3>示例二：<span style="color: rgb(37, 41, 51)">控制更新、控制(大)DOM重新渲染时间</span><br></h3>
+<p>看接下来这个例子， 我设置了2个计数器, 但只有在被依赖的<code>subscribers</code>变化时, 子节点才会重新渲染。<br></p>
+<p>如果我们修改了子节点依赖的<code>inner</code>，我们的<code>div</code>将不会重新渲染，但只要我们更新<code>subscribers</code>的值即会重新渲染：[图片]<br></p>
+<p><br></p>
+<p>总结来说：<code>v-memo</code>的主要作用是<span style="color: rgb(37, 41, 51)"><strong>用于性能至上的场景中的微小优化</strong></span><br></p>
+<p><br></p>
+<h2><span style="color: rgb(17, 124, 238)">【中等】</span>v-for 循环为什么要绑定 key ，它的作用是什么？<br></h2>
+<p>在 Vue.js 中，使用<code>v-for</code>指令进行循环渲染时，通常建议绑定一个唯一的<code>key</code>属性到循环的元素上。<br></p>
+<p><code>key</code>的作用是帮助 Vue 识别每个循环项，以便在数据变化时更高效地更新虚拟 DOM 和实际 DOM。<br></p>
+<p>下面是<code>key</code>的作用和原因：<br></p>
+<ul>
+<li><strong>识别元素</strong>：<code>key</code>用于标识每个循环生成的元素。当数据发生变化时，Vue 使用<code>key</code>来判断哪些元素是新添加的、哪些是删除的，以便进行高效的更新。<br></li>
+<li><strong>优化性能</strong>：如果没有指定<code>key</code>，Vue 可能会难以识别元素的唯一性，从而导致一些性能问题。有时，删除或更新元素可能会变得低效，因为 Vue 需要进行全面的比较。<br></li>
+<li><strong>保持状态</strong>：如果没有<code>key</code>，在某些情况下可能会导致不正确的状态保持。特别是在表单元素等需要保持用户输入状态的情况下，<code>key</code>可以确保正确的状态被维护。<br></li>
+<li><strong>处理动态数据</strong>：当数据中的元素顺序变化时，<code>key</code>可以帮助 Vue 正确地识别元素的位置和变化，从而避免渲染错误。<br></li>
+</ul>
+<p>一般来说，<code>key</code>应该是具有唯一性的标识符，可以是元素的 ID、索引或其他唯一值。不推荐使用随机数或时间戳作为<code>key</code>，因为这可能会导致不稳定的行为，尤其在数据变化频繁的情况下。<br></p>
+<p><br></p>
+<h2><span style="color: rgb(223, 42, 63)">【困难】</span>从源码的角度来解释这个问题（问题11）<br></h2>
+<p><code>v-for</code>通常应用在<strong>一组 DOM 的循环中。</strong>当这组<code>DOM</code>的数据发生变化时，就会<strong>两组</strong><code>DOM</code>的更新，例如：<br></p>
+<p>原数组：[a, b, c]<br></p>
+<p>新数组：[a, b, d]<br></p>
+<p>这两组<code>DOM</code>的更新就会触发<code>diff 算法</code><strong>。</strong><br></p>
+<p>而所谓的 “添加<code>key</code>优化性能” 其实指的就是<strong>优化</strong><code>diff</code><strong>算法。</strong><br></p>
+<p>在<code>diff</code>中：如果<strong>新 DOM 和旧 DOM 是同一个 DOM 节点，则旧 DOM 不需要销毁重新创建。</strong><br></p>
+<p>那么，<code>Vue</code>是如何判断<code>DOM</code>是同一个节点的呢？就是通过<code>key</code><strong>和</strong><code>节点名</code><strong>共同判断的。</strong><br></p>
+<p>在<code>Vue3</code>的源码有这样一段代码：<br></p>
+<p>其中<code>type</code>表示节点类型（例如：<code>li、ul、div、img</code>等），而<code>key</code>就是<code>v-for</code>循环中的<code>key</code>属性。<br></p>
+<p>所以说：<strong>如果</strong><code>key</code><strong>属性不设置，则会导致</strong><code>Vue</code><strong>无法判断两个</strong><code>DOM</code><strong>节点是否为同一个</strong><code>DOM</code><strong>节点。从而导致</strong><code>diff</code><strong>无法进行，影响性能。</strong><br></p>
+<p><br></p>
+<h2><span style="color: rgb(223, 42, 63)">【困难】</span>VueLoader 是怎么处理 vue 文件的？<br></h2>
+<p><code>vue-loader</code>是一个用于处理 Vue.js 单文件组件（.vue 文件）的 Webpack 加载器。它允许你在一个单个文件中编写 Vue 组件，包括模板、脚本和样式，然后将其转换为可在浏览器中运行的 JavaScript。<br></p>
+<p>以下是<code>vue-loader</code>处理 Vue 单文件组件的主要步骤：<br></p>
+<ul>
+<li><strong>解析单文件组件</strong>：<code>vue-loader</code>从入口文件中导入或引入 Vue 单文件组件。这个文件通常以<code>.vue</code>为扩展名，包含了模板、脚本和样式。<br></li>
+<li><strong>分离模板、脚本和样式</strong>：<code>vue-loader</code>会分离单文件组件中的模板、脚本和样式部分。这允许你在一个文件中以更组织良好的方式编写 Vue 组件。<br></li>
+<li><strong>处理模板</strong>：模板部分通常包括 Vue 的模板语法，<code>vue-loader</code>使用 Vue 模板编译器将其编译为渲染函数。这个渲染函数会在运行时将组件的虚拟 DOM 渲染到实际 DOM 上。<br></li>
+<li><strong>处理脚本</strong>：脚本部分是 Vue 组件的逻辑，通常包括组件的数据、方法等。<code>vue-loader</code>可以将这部分代码用 Babel 等工具进行转译，以确保它在浏览器中可以执行。你也可以使用 TypeScript 来编写脚本。<br></li>
+<li><strong>处理样式</strong>：<code>vue-loader</code>支持在单文件组件中使用各种样式语言，如 CSS、SCSS、Less 等。它可以将样式提取出来，同时允许你在组件中使用 CSS 模块化或预处理器特性。<br></li>
+<li><strong>生成组件定义</strong>：一旦模板、脚本和样式都经过处理，<code>vue-loader</code>将它们合并为一个 Vue 组件定义对象，其中包含编译后的渲染函数、组件选项等。<br></li>
+<li><strong>导出组件定义</strong>：最后，<code>vue-loader</code>导出 Vue 组件定义，以便在你的应用程序中使用。这个组件定义可以被导入到其他 Vue 文件或应用程序中，并通过 Vue 的组件系统注册和使用。<br></li>
+</ul>
+<p>通过<code>vue-loader</code>的处理，你可以在一个文件中编写完整的 Vue 单文件组件，这提高了代码的可维护性和可读性，并使代码组织更加清晰。<br></p>
+<p><br></p>
+<h2><span style="color: rgb(116, 182, 2)">【简单】</span>reactive 为什么解构之后就会失去响应性<br></h2>
+<p>因为 reactive 本质上是返回了一个 proxy 的实例。vue 中的响应性主要就是依赖于 proxy 的 getter 和 setter 的监听。<br></p>
+<p>如果把 proxy 解构之后，就会得到一个基本数据（简单或者复杂数据类型），这样就无法监听 getter 和 setter 的行为。所以就会失去向影响。<br></p>
+<p><br></p>
+<h2><span style="color: rgb(116, 182, 2)">【简单】</span><span style="color: rgb(0, 0, 0)">如何对</span>reactive 解构<br></h2>
+<p>可以使用<a href="https://cn.vuejs.org/api/reactivity-utilities.html#toref">toRef</a>或者<a href="https://cn.vuejs.org/api/reactivity-utilities.html#torefs">toRefs</a>的方法对 reactive 进行解构。<br></p>
+<p>解构之后会得到 ref 类型的数据。<br></p>
+<h2><span style="color: rgb(116, 182, 2)">【简单】</span>ref 为什么必须要 .value？<br></h2>
+<p>因为 ref 方法返回的是一个 RefImpl 类型的实例对象。它在监听响应式的时候，主要依靠<code>get value(){}</code>和<code>set value(){}</code>这两个方法进行监听<code>getter</code>和<code>setter</code>的行为。<br></p>
+<p>所以，当<code>.value</code>的时候，本质上触发的就是<code>value</code>方法。只有触发了<code>value</code>方法才可以监听到<code>getter</code>和<code>setter</code>。<br></p>
+<h2><span style="color: rgb(223, 42, 63)">【困难】</span>结合源码完整的说一下 ref 的实现原理<br></h2>
+<p>在 Vue 3.2 中，<code>ref</code>的实现原理主要依赖于<strong>类封装、getter/setter、依赖追踪</strong>以及<strong>依赖触发更新</strong>。这些机制结合使用，使得<code>ref</code>的响应式系统在操作简单类型时更加轻量高效，并支持模板中的自动解包特性。以下是对<code>ref</code>实现原理的详细分析。<br></p>
+<h3>1.<code>ref</code>的创建入口<br></h3>
+<p>Vue 的<code>ref</code>函数用于将一个基本类型或对象包装成响应式数据。<code>ref</code>的核心实现逻辑在<code>createRef</code>函数中。<br></p>
+<pre><code class="language-javascript">function ref(value) {
+  return createRef(value, false)
+}</code></pre>
+<ul>
+<li><code>ref</code>函数接受一个<code>value</code>参数（可以是基本类型或对象）并调用<code>createRef</code>。<br></li>
+<li><code>createRef</code>会检查<code>value</code>是否已经是一个<code>ref</code>，如果是，则直接返回，否则创建新的<code>RefImpl</code>实例。<br></li>
+</ul>
+<h3>2.<code>RefImpl</code>类的构造<br></h3>
+<p><code>RefImpl</code>是 Vue 中<code>ref</code>的核心实现类，它通过对<code>value</code>的<code>getter</code>和<code>setter</code>方法来实现响应式。<br></p>
+<pre><code class="language-javascript">class RefImpl {
+  private _value: any // 响应式值
+  private _rawValue: any // 原始值（用于比较）
+  public readonly __v_isRef = true // 标记为 ref 类型
+
+  constructor(value, public readonly __v_isShallow: boolean) {
+    this._rawValue = value
+    // 如果是浅层（shallow）ref，则直接赋值，否则将值转换为响应式对象
+    this._value = __v_isShallow ? value : toReactive(value)
+  }
+
+  get value() {
+    // 依赖追踪：在访问 .value 时进行依赖收集
+    trackRefValue(this)
+    return this._value
+  }
+
+  set value(newVal) {
+    // 判断新旧值是否不同，避免不必要的更新
+    if (hasChanged(newVal, this._rawValue)) {
+      this._rawValue = newVal
+      this._value = this.__v_isShallow ? newVal : toReactive(newVal)
+      // 触发依赖更新
+      triggerRefValue(this)
+    }
+  }
+}</code></pre>
+<h4>细节分析<br></h4>
+<ul>
+<li><code>__v_isRef</code>：这是一个内部标记，标识当前对象是<code>ref</code>类型，Vue 会利用这个标记进行解包处理。<br></li>
+<li><code>_rawValue</code><strong>和</strong><code>_value</code>：<code>_rawValue</code>存储的是传入的原始值，而<code>_value</code>是响应式后的值。Vue 通过<code>_rawValue</code>和<code>_value</code>的分离，能够在<code>setter</code>中判断新旧值是否发生变化。<br></li>
+<li><strong>深浅响应</strong>：<code>__v_isShallow</code>控制了<code>ref</code>的深浅响应。如果为<code>true</code>，则<code>ref</code>为浅层响应式，不递归处理内部对象；否则，将<code>value</code>转为响应式对象，实现深层响应。<br></li>
+</ul>
+<h3>3. 依赖追踪与更新触发<br></h3>
+<p>在<code>getter</code>和<code>setter</code>中，Vue 利用依赖追踪（<code>trackRefValue</code>）和更新触发（<code>triggerRefValue</code>）来维护响应式关系。<br></p>
+<h4>依赖追踪：<code>trackRefValue</code><br></h4>
+<p>当访问<code>.value</code>时，Vue 会调用<code>trackRefValue</code>来进行依赖收集。<br></p>
+<pre><code class="language-javascript">function trackRefValue(ref) {
+  if (shouldTrack &amp;&amp; activeEffect) {
+    trackEffects(ref.dep || (ref.dep = createDep()))
+  }
+}</code></pre>
+<ul>
+<li><strong>依赖收集</strong>：<code>trackRefValue</code>将当前活动的依赖（即使用<code>ref.value</code>的地方，如组件或计算属性）记录在<code>ref.dep</code>中。<br></li>
+<li><code>dep</code><strong>集合</strong>：<code>dep</code>是一个依赖集合，存储所有依赖该<code>ref</code>的函数或组件，当<code>ref</code>更新时，<code>dep</code>中的依赖会被触发更新。<br></li>
+</ul>
+<h4>触发更新：<code>triggerRefValue</code><br></h4>
+<p>在设置<code>.value</code>时，如果新值和旧值不同，Vue 会调用<code>triggerRefValue</code>，通知所有依赖项进行更新。<br></p>
+<pre><code class="language-javascript">function triggerRefValue(ref) {
+  if (ref.dep) {
+    triggerEffects(ref.dep)
+  }
+}</code></pre>
+<ul>
+<li><strong>依赖更新触发</strong>：<code>triggerRefValue</code>会遍历<code>dep</code>集合，将所有依赖于该<code>ref</code>的副作用函数执行一次，从而实现依赖的自动更新。<br></li>
+</ul>
+<h3>4. 辅助函数<br></h3>
+<p>在<code>RefImpl</code>的实现中，Vue 使用了几个辅助函数来优化<code>ref</code>的响应式处理。<br></p>
+<h4><code>hasChanged</code>：比较新旧值<br></h4>
+<p>Vue 在<code>setter</code>中通过<code>hasChanged</code>函数来比较新旧值，防止不必要的更新。<br></p>
+<pre><code class="language-javascript">function hasChanged(value, oldValue) {
+  return !Object.is(value, oldValue)
+}</code></pre>
+<ul>
+<li><strong>值比较</strong>：<code>hasChanged</code>使用<code>Object.is</code>来判断新旧值是否相等，从而避免不必要的触发更新。<br></li>
+</ul>
+<h4><code>toReactive</code>：深度响应式转换<br></h4>
+<p>当<code>ref</code>的值是一个对象时，<code>toReactive</code>会将其转为深层响应式对象。<br></p>
+<pre><code class="language-javascript">function toReactive(value) {
+  return isObject(value) ? reactive(value) : value
+}</code></pre>
+<ul>
+<li><strong>深度代理</strong>：如果<code>value</code>是对象，Vue 会将其转为响应式对象，使用<code>reactive</code>API 实现深层响应。<br></li>
+<li><strong>浅层响应</strong>：如果<code>ref</code>是浅层响应式（即<code>shallowRef</code>），则直接返回对象，不做响应式转换。<br></li>
+</ul>
+<h3>5. 自动解包机制<br></h3>
+<p>Vue 在模板中访问<code>ref</code>时，会自动解包<code>.value</code>，不需要显式调用。这依赖于<code>__v_isRef</code>标记，Vue 渲染时检查这个标记，从而实现自动解包。<br></p>
+<h3>总结<br></h3>
+<p>Vue 3.2 中的<code>ref</code>实现依赖于<code>RefImpl</code>类的<code>getter</code>和<code>setter</code>，结合<code>trackRefValue</code>和<code>triggerRefValue</code>进行依赖追踪和触发更新。通过标记和自动解包，<code>ref</code>实现了对基本类型和复杂对象的高效响应式支持，使 Vue 的响应式系统更加灵活和简洁。<br></p>
+<h2><span style="color: rgb(116, 182, 2)">【简单】</span>watch 和 watchEffect 的区别是什么？<br></h2>
+<p>在Vue 3中，<code>watch</code>和<code>watchEffect</code>是用来监视响应式数据变化并执行相应操作的两种不同方式，它们之间有一些重要的区别：<br></p>
+<ul>
+<li><code>watch</code>：<br></li>
+<li><code>watch</code>是一个函数，它接受两个参数：要监视的数据或计算属性，以及一个回调函数。<br></li>
+<li><code>watch</code>是声明式的，您需要明确指定要监视的数据或计算属性，以及在数据变化时要执行的回调函数。<br></li>
+<li>您可以访问先前值和当前值，以便在回调函数中执行更复杂的逻辑。<br></li>
+<li><code>watch</code>的回调函数默认情况下<strong>不会</strong>在初始渲染时执行，只有设置了<code>immediate</code>为<code>true</code>时才会执行，然后在监视的数据发生变化时再次执行。<br></li>
+</ul>
+<p>示例代码：<br></p>
+<p><br></p>
+<ul>
+<li><code>watchEffect</code>：<br></li>
+<li><code>watchEffect</code>是一个函数，它接受一个包含响应式数据访问的函数作为参数。<br></li>
+<li><code>watchEffect</code>是更像是一个函数式的副作用，它会自动追踪在函数中访问的响应式数据，并在其中任何数据变化时自动触发回调。<br></li>
+<li>您无法访问先前值，因为它不提供先前值的参数。<br></li>
+<li><code>watchEffect</code>的回调函数会在组件渲染后立即执行一次，然后在其中访问的数据发生变化时再次执行。<br></li>
+</ul>
+<p>示例代码：<br></p>
+<p><br></p>
+<p>总的来说，<code>watch</code>适用于需要访问先前值或执行更复杂逻辑的情况，而<code>watchEffect</code>更适用于简单的响应式数据副作用。您可以根据您的具体需求选择使用哪种方式。<br></p>
+<p><br></p>
+<h2><span style="color: rgb(17, 124, 238)">【中等】</span><span style="color: rgb(51, 51, 51)">vue2、vue3中的v-if和v-for的优先级问题</span><br></h2>
+<p>详情博客：<a href="https://www.nowcoder.com/discuss/513503986318696448">https://www.nowcoder.com/discuss/513503986318696448</a><br></p>
+<p>注意：Vue2 和 Vue3 中都<strong>不推荐</strong>同时使用 v-if 和 v-for<br></p>
+<p><br></p>
+<p><br></p>
+<h2><span style="color: rgb(223, 42, 63)">【困难】</span>React 和 Vue 数据驱动的概念差异<br></h2>
+<p>React 和 Vue 都是主流的前端框架，它们都基于数据驱动的理念，即当数据发生变化时，视图自动更新。但两者在数据驱动的实现方式和概念上存在一些差异。下面详细介绍它们在数据驱动概念上的不同。<br></p>
+<h3>1. 数据驱动概念的核心思想<br></h3>
+<ul>
+<li><strong>React</strong>：React 的数据驱动依赖于<strong>不可变数据</strong>和<strong>单向数据流</strong>的思想。React 组件的状态（<code>state</code>）是通过不可变的数据更新触发重新渲染。组件的更新是通过“重新渲染整个组件树”，而不是直接操作 DOM 元素。<br></li>
+<li><strong>Vue</strong>：Vue 则采用<strong>响应式数据系统</strong>，通过<code>Proxy</code>（Vue 3）或<code>Object.defineProperty</code>（Vue 2）来追踪数据的变化，自动更新视图。Vue 的数据驱动模型更接近于“声明式”编程，开发者只需要修改数据，Vue 的响应式系统会自动处理 DOM 更新。<br></li>
+</ul>
+<h3>2. 数据变化的追踪机制<br></h3>
+<h4>React: 手动触发更新<br></h4>
+<ul>
+<li>在 React 中，数据变化通过<strong>显式地更新 state</strong>来驱动视图更新。例如，使用<code>this.setState</code>或<code>useState</code>钩子来改变组件的状态，然后 React 会根据更新后的状态重新渲染组件。<br></li>
+<li><strong>不可变数据</strong>：React 强调数据不可变，任何对数据的修改都需要返回一个新的对象，以便 React 识别状态是否发生变化。React 通过浅比较来判断组件是否需要更新。<br></li>
+</ul>
+<p><strong>示例：</strong><br></p>
+<p>在这个示例中，<code>setCount</code>会触发组件重新渲染。<br></p>
+<h4>Vue: 自动追踪数据变化<br></h4>
+<ul>
+<li>Vue 的数据变化是<strong>自动追踪</strong>的。当数据被修改时，Vue 的响应式系统会立即追踪到这个变化，并自动更新相应的视图。Vue 的响应式系统会侦听对象属性的变化，通过<code>Proxy</code>（Vue 3）或<code>Object.defineProperty</code>（Vue 2）来劫持数据访问和修改，从而实现数据与视图的双向绑定。<br></li>
+<li>这种机制让 Vue 的开发体验更加简洁，开发者不需要手动触发视图更新，只要修改数据，视图就会自动反映最新状态。<br></li>
+</ul>
+<p><strong>示例：</strong><br></p>
+<p>在 Vue 中，修改<code>this.count</code>就会触发视图更新，无需显式调用渲染函数。<br></p>
+<h3>3. 数据流的控制<br></h3>
+<h4>React: 单向数据流<br></h4>
+<ul>
+<li>React 的数据流是<strong>单向的</strong>，即数据从父组件流向子组件，通过 props 进行传递。子组件不能直接修改父组件的数据，而是通过回调函数让父组件更新状态，这种设计简化了数据流的管理，特别是在复杂应用中，保证了数据流的可控性和可预测性。<br></li>
+<li><strong>不可变性</strong>：React 提倡数据不可变，组件状态或 props 发生变化时，会创建新的对象，并通过<code>setState</code>或<code>useState</code>重新渲染组件。<br></li>
+</ul>
+<p><strong>示例：</strong><br></p>
+<p>数据从<code>Parent</code>流向<code>Child</code>，更新通过回调函数从<code>Child</code>传回<code>Parent</code>。<br></p>
+<h4>Vue: 双向数据绑定和单向数据流<br></h4>
+<ul>
+<li>Vue 提供了类似 React 的<strong>单向数据流</strong>，通过 props 将数据从父组件传递到子组件。子组件可以发出事件（如<code>$emit</code>）通知父组件进行数据更新。<br></li>
+<li>但是，Vue 还支持<strong>双向数据绑定</strong>，尤其是在表单元素上，Vue 提供了<code>v-model</code>指令，可以实现数据的双向绑定——即视图中的数据变化会直接更新模型，模型数据变化也会自动反映在视图上。这使得处理表单、输入等场景更加简单。<br></li>
+</ul>
+<p><strong>示例：单向数据流</strong><br></p>
+<p><strong>示例：双向数据绑定</strong><br></p>
+<p>通过<code>v-model</code>，<code>name</code>的变化会自动更新输入框的内容，输入框内容变化也会更新<code>name</code>。<br></p>
+<h3>4. 数据更新与性能优化<br></h3>
+<h4>React: 虚拟 DOM + Reconciliation<br></h4>
+<ul>
+<li>React 使用<strong>虚拟 DOM</strong>来管理视图的更新。当组件的状态或 props 发生变化时，React 会重新渲染虚拟 DOM 树，并将其与之前的虚拟 DOM 进行对比（即 diff 过程）。React 通过 diff 算法找出变化的部分，并将这些部分应用到真实 DOM 中。<br></li>
+<li><strong>不可变数据</strong>：由于 React 使用不可变数据，React 可以通过浅比较来判断数据是否发生了变化，从而减少不必要的更新。<br></li>
+</ul>
+<h4>Vue: 响应式系统 + 模板编译优化<br></h4>
+<ul>
+<li>Vue 的响应式系统可以自动追踪数据变化，并只对发生变化的数据进行更新。通过响应式系统，Vue 可以做到在数据层发生变化时，自动将变化反映到视图层，而无需额外的 diff 比较。<br></li>
+<li><strong>模板编译优化</strong>：Vue 在编译阶段对模板进行分析，提取出静态和动态部分，从而优化渲染时的性能。静态内容只渲染一次，而动态内容则通过响应式系统高效更新。<br></li>
+</ul>
+<h3>5. 总结<br></h3>
+<p>特性<br></p>
+<p>React<br></p>
+<p>Vue<br></p>
+<p><strong>数据追踪机制</strong><br></p>
+<p>显式通过<code>setState</code>或<code>useState</code>触发更新<br></p>
+<p>自动追踪数据变化，基于 Proxy 实现响应式更新<br></p>
+<p><strong>数据流模式</strong><br></p>
+<p>单向数据流，父组件通过 props 传递数据<br></p>
+<p>单向数据流 + 双向数据绑定，<code>v-model</code>支持<br></p>
+<p><strong>数据更新机制</strong><br></p>
+<p>不可变数据，浅比较优化性能<br></p>
+<p>响应式系统，自动侦听数据变化<br></p>
+<p><strong>视图更新策略</strong><br></p>
+<p>虚拟 DOM + diff 对比，找到最小更新集<br></p>
+<p>模板编译优化 + 响应式系统<br></p>
+<p><strong>性能优化手段</strong><br></p>
+<p>应用不可变数据、<code>memo</code>、<code>useMemo</code>等手段<br></p>
+<p>静态内容提升、Patch Flags（Vue 3）优化更新<br></p>
+<p>Vue 的数据驱动更加自动化和“声明式”，而 React 则更依赖开发者显式地控制状态和数据流，体现了两者在设计哲学上的不同。<br></p>
+<h2><span style="color: rgb(223, 42, 63)">【困难】</span>Vue 和 React 的区别（概述）<br></h2>
+<p><span style="color: rgba(38, 38, 38, 0.8)"><strong>vue和react区别</strong></span><span style="color: rgba(38, 38, 38, 0.8)">有以下 11 点：1、响应式原理不同；2、监听数据变化的实现原理不同；3、组件写法不同；4、Diff算法不同；5、核心思想不同；6、数据流不同；7、组合不同功能的方式不同；8、组件通信方法不同；9、模板渲染方式不同；10、渲染过程不同；11、框架本质不同。</span><br></p>
+<h3><span style="color: rgb(38, 38, 38)">1、响应式原理不同</span><br></h3>
+<p><span style="color: rgb(38, 38, 38)"><strong>vue</strong></span><span style="color: rgb(38, 38, 38)">：vue会遍历data数据对象，使用</span><span style="color: rgb(38, 38, 38)"><strong>Object.definedProperty()</strong></span><span style="color: rgb(38, 38, 38)">将每个属性都转换为getter和setter，每个Vue组件实例都有一个对应的watcher实例，在组件初次渲染的时候会记录组件用到了那些数据，当数据发生改变的时候，会触发</span><span style="color: rgb(38, 38, 38)"><strong>setter方法</strong></span><span style="color: rgb(38, 38, 38)">，并通知所有依赖这个数据的watcher实例调用update方法去触发组件的compile渲染方法，进行渲染数据。</span><br></p>
+<p><span style="color: rgb(38, 38, 38)"><strong>react</strong></span><span style="color: rgb(38, 38, 38)">：React主要是通过</span><span style="color: rgb(38, 38, 38)"><strong>setState()方法</strong></span><span style="color: rgb(38, 38, 38)">来更新状态，状态更新之后，组件也会重新渲染。</span><br></p>
+<h3><span style="color: rgb(38, 38, 38)">2、监听数据变化的实现原理不同</span><br></h3>
+<p><span style="color: rgb(38, 38, 38)"><strong>vue</strong></span><span style="color: rgb(38, 38, 38)">：Vue通过</span><span style="color: rgb(38, 38, 38)"><strong>getter/setter</strong></span><span style="color: rgb(38, 38, 38)">以及一些函数的劫持，能精确知道数据变化。</span><br></p>
+<p><span style="color: rgb(38, 38, 38)"><strong>react</strong></span><span style="color: rgb(38, 38, 38)">：React默认是通过</span><span style="color: rgb(38, 38, 38)"><strong>比较引用的方式（diff）</strong></span><span style="color: rgb(38, 38, 38)">进行的，如果不优化可能导致大量不必要的VDOM的重新渲染。为什么React不精确监听数据变化呢？这是因为Vue和React设计理念上的区别，Vue使用的是可变数据，而React更强调数据的不可变，两者没有好坏之分。</span><br></p>
+<h3><span style="color: rgb(38, 38, 38)">3、组件写法不同</span><br></h3>
+<p><span style="color: rgb(38, 38, 38)"><strong>vue</strong></span><span style="color: rgb(38, 38, 38)">：Vue的组件写法是通过</span><span style="color: rgb(38, 38, 38)"><strong>template的单文件组件格式</strong></span><span style="color: rgb(38, 38, 38)">。</span><br></p>
+<p><span style="color: rgb(38, 38, 38)"><strong>react</strong></span><span style="color: rgb(38, 38, 38)">：React的组件写法是</span><span style="color: rgb(38, 38, 38)"><strong>JSX+inline style</strong></span><span style="color: rgb(38, 38, 38)">，也就是吧HTML和CSS全部写进JavaScript中。</span><br></p>
+<h3><span style="color: rgb(38, 38, 38)">4、Diff算法不同</span><br></h3>
+<p><span style="color: rgb(38, 38, 38)">vue和react的diff算法都是进行同层次的比较，主要有以下两点不同：</span><br></p>
+<ul>
+<li><span style="color: rgb(38, 38, 38)">vue对比节点，如果节点元素类型相同，但是className不同，认为是不同类型的元素，会进行删除重建，但是react则会认为是同类型的节点，只会修改节点属性。</span><br></li>
+<li><span style="color: rgb(38, 38, 38)">vue的列表比对采用的是首尾指针法，而react采用的是从左到右依次比对的方式，当一个集合只是把最后一个节点移动到了第一个，react会把前面的节点依次移动，而vue只会把最后一个节点移动到最后一个，从这点上来说vue的对比方式更加高效。</span><br></li>
+</ul>
+<h3><span style="color: rgb(38, 38, 38)">5、核心思想不同</span><br></h3>
+<p><span style="color: rgb(38, 38, 38)"><strong>vue</strong></span><span style="color: rgb(38, 38, 38)">：Vue的核心思想是尽可能的降低前端开发的门槛，是一个</span><span style="color: rgb(38, 38, 38)"><strong>灵活易用的渐进式双向绑定的MVVM框架</strong></span><span style="color: rgb(38, 38, 38)">。</span><br></p>
+<p><span style="color: rgb(38, 38, 38)"><strong>react</strong></span><span style="color: rgb(38, 38, 38)">：React的核心思想是</span><span style="color: rgb(38, 38, 38)"><strong>声明式渲染和组件化、单向数据流</strong></span><span style="color: rgb(38, 38, 38)">，React既不属于MVC也不属于MVVM架构。</span><br></p>
+<h3><span style="color: rgb(38, 38, 38)">6、数据流不同</span><br></h3>
+<p><span style="color: rgb(38, 38, 38)"><strong>vue</strong></span><span style="color: rgb(38, 38, 38)">：Vue1.0中可以实现</span><span style="color: rgb(38, 38, 38)"><strong>两种双向绑定</strong></span><span style="color: rgb(38, 38, 38)">：</span><span style="color: rgb(38, 38, 38)"><strong>父子组件</strong></span><span style="color: rgb(38, 38, 38)">之间，props可以双向绑定；</span><span style="color: rgb(38, 38, 38)"><strong>组件与DOM</strong></span><span style="color: rgb(38, 38, 38)">之间可以通过v-model双向绑定。Vue2.x中去掉了第一种，也就是父子组件之间不能双向绑定了（但是提供了一个语法糖自动帮你通过事件的方式修改），并且Vue2.x已经不鼓励组件对自己的 props进行任何修改了。</span><br></p>
+<p><span style="color: rgb(38, 38, 38)"><strong>react</strong></span><span style="color: rgb(38, 38, 38)">：React一直不支持双向绑定，提倡的是</span><span style="color: rgb(38, 38, 38)"><strong>单向数据流</strong></span><span style="color: rgb(38, 38, 38)">，称之为</span><span style="color: rgb(38, 38, 38)"><strong>onChange/setState()模式</strong></span><span style="color: rgb(38, 38, 38)">。不过由于我们一般都会用Vuex以及Redux等单向数据流的状态管理框架，因此很多时候我们感受不到这一点的区别了。</span><br></p>
+<h3><span style="color: rgb(38, 38, 38)">7、组合不同功能的方式不同</span><br></h3>
+<p><span style="color: rgb(38, 38, 38)"><strong>vue</strong></span><span style="color: rgb(38, 38, 38)">：Vue组合不同功能的方式是通过</span><span style="color: rgb(38, 38, 38)"><strong>mixin</strong></span><span style="color: rgb(38, 38, 38)">，Vue中组件是一个被包装的函数，并不简单的就是我们定义组件的时候传入的对象或者函数。比如我们定义的模板怎么被编译的？比如声明的props怎么接收到的？这些都是vue创建组件实例的时候隐式干的事。由于vue默默帮我们做了这么多事，所以我们自己如果直接把组件的声明包装一下，返回一个HoC，那么这个被包装的组件就无法正常工作了。</span><br></p>
+<p><span style="color: rgb(38, 38, 38)"><strong>react</strong></span><span style="color: rgb(38, 38, 38)">：React组合不同功能的方式是通过</span><span style="color: rgb(38, 38, 38)"><strong>HoC(高阶组件）</strong></span><span style="color: rgb(38, 38, 38)">。React最早也是使用mixins的，不过后来他们觉得这种方式对组件侵入太强会导致很多问题，就弃用了mixinx转而使用HoC。高阶组件本质就是高阶函数，React的组件是一个纯粹的函数，所以高阶函数对React来说非常简单。</span><br></p>
+<h3><span style="color: rgb(38, 38, 38)">8、组件通信方法不同</span><br></h3>
+<p><span style="color: rgb(38, 38, 38)"><strong>vue</strong></span><span style="color: rgb(38, 38, 38)">：Vue中有三种方式可以实现组件通信：父组件通过props向子组件传递数据或者回调，虽然可以传递回调，但是我们一般只传数据；子组件通过事件向父组件发送消息；通过V2.2.0中新增的provide/inject来实现父组件向子组件注入数据，可以跨越多个层级。</span><br></p>
+<p><span style="color: rgb(38, 38, 38)"><strong>react</strong></span><span style="color: rgb(38, 38, 38)">：React中也有对应的三种方式：父组件通过props可以向子组件传递数据或者回调；可以通过 context 进行跨层级的通信，这其实和 provide/inject 起到的作用差不多。React 本身并不支持自定义事件，而Vue中子组件向父组件传递消息有两种方式：事件和回调函数，但Vue更倾向于使用事件。在React中我们都是使用回调函数的，这可能是他们二者最大的区别。</span><br></p>
+<h3><span style="color: rgb(38, 38, 38)">9、模板渲染方式不同</span><br></h3>
+<p><span style="color: rgb(38, 38, 38)"><strong>vue</strong></span><span style="color: rgb(38, 38, 38)">：Vue是在和组件JS代码分离的单独的模板中，通过</span><span style="color: rgb(38, 38, 38)"><strong>指令</strong></span><span style="color: rgb(38, 38, 38)">来实现的，比如条件语句就需要 v-if 来实现对这一点，这样的做法显得有些独特，会把HTML弄得很乱。</span><br></p>
+<p><span style="color: rgb(38, 38, 38)"><strong>react</strong></span><span style="color: rgb(38, 38, 38)">：React是在组件JS代码中，通过</span><span style="color: rgb(38, 38, 38)"><strong>原生JS</strong></span><span style="color: rgb(38, 38, 38)">实现模板中的常见语法，比如插值，条件，循环等，都是通过JS语法实现的，更加纯粹更加原生。</span><br></p>
+<h3><span style="color: rgb(38, 38, 38)">10、渲染过程不同</span><br></h3>
+<p><span style="color: rgb(38, 38, 38)"><strong>vue</strong></span><span style="color: rgb(38, 38, 38)">：Vue可以更快地计算出Virtual DOM的差异，这是由于它在渲染过程中，会跟踪每一个组件的依赖关系，</span><span style="color: rgb(38, 38, 38)"><strong>不需要重新渲染整个组件树</strong></span><span style="color: rgb(38, 38, 38)">。</span><br></p>
+<p><span style="color: rgb(38, 38, 38)"><strong>react</strong></span><span style="color: rgb(38, 38, 38)">：React在应用的状态被改变时，</span><span style="color: rgb(38, 38, 38)"><strong>全部子组件都会重新渲染</strong></span><span style="color: rgb(38, 38, 38)">。通过shouldComponentUpdate这个生命周期方法可以进行控制，但Vue将此视为默认的优化。</span><br></p>
+<h3><span style="color: rgb(38, 38, 38)">11、框架本质不同</span><br></h3>
+<p><span style="color: rgb(38, 38, 38)"><strong>vue</strong></span><span style="color: rgb(38, 38, 38)">：Vue本质是</span><span style="color: rgb(38, 38, 38)"><strong>MVVM框架</strong></span><span style="color: rgb(38, 38, 38)">，由MVC发展而来；</span><br></p>
+<p><span style="color: rgb(38, 38, 38)"><strong>react</strong></span><span style="color: rgb(38, 38, 38)">：React是</span><span style="color: rgb(38, 38, 38)"><strong>前端组件化框架</strong></span><span style="color: rgb(38, 38, 38)">，由后端组件化发展而来。</span><br></p>
+<h2><span style="color: rgb(223, 42, 63)">【困难】</span>Vue3中什么是Reactive的懒响应性？<br></h2>
+<p><strong>Reactive 的懒响应性</strong>可能很多同学之前没有听说过这个概念。最近一个同学在面试中就被问到了这个问题。所以说，咱们今天就借助这篇文章来看下：在vue3中，什么是 Reactive 的懒响应性？<br></p>
+<h3>01：Reactive 的实现原理<br></h3>
+<p>Reactive 是基于<code>Proxy</code>进行实现的，这个概念很多同学都是知道的。我们可以通过 vue 的源码来看下这个实现：<br></p>
+<p>[图片]<br></p>
+<p>通过上图红框中的代码，我们可以很清晰的看到在 Reactive 里面，Vue 最终通过<code>new Proxy</code>的方式生成了一个 Proxy 的实例对象。 这个 Proxy 的实例就是<code>reactive()</code>方法调用时的返回值。<br></p>
+<p>我们可以通过如下伪代码表示：<br></p>
+<p>在这种情况下，<code>{name: '张三'}</code>就会被包装成一个<strong>响应式对象</strong>，<code>proxy</code>通过监听它的<code>getter、setter</code>行为来触发响应性。<br></p>
+<h3>02：Proxy 的问题<br></h3>
+<p>Proxy 可以代理对象，这个是没有问题的。<strong>但是：Proxy 只能代理一层对象，而不能代理多层</strong>。<br></p>
+<p>什么意思呢？假如当 代理对象 具备层级嵌套的时候，proxy 是不可以代理子层级的。我们可以通过以下代码来进行测试：<br></p>
+<p>在上述代码中，我们利用 proxy 代理了 target 对象。<strong>注意：此时的 target 是存在嵌套的复杂数据类型 child</strong>。<br></p>
+<p>当我们执行<code>p.name = '李四'</code>时，触发<code>set</code>行为，这是一个很正常的逻辑。但是，当我们执行<code>p.child.name = '小李四'</code>时，我们会发现<strong>仅触发了一个 get（p.child），而没有触发</strong><code>set</code>行为。<br></p>
+<p>这就证明：对于 Proxy 而言，<strong>它只能代理 一层 的复杂数据类型，而不可以代理多层</strong>。<br></p>
+<p>但是，在 Vue 中<strong>多层的 Reactive 对象却可以实现响应性，那么这是如何做到的呢？</strong>具体的方式就是<strong>Reactive的懒响应性</strong>。<br></p>
+<h3>03：Reactive的懒响应性<br></h3>
+<p>我们观察 Vue 的源码，在源码监听 proxy getter 行为的地方，存在这样一段代码（我把代码稍微做了一些调整，让大家看的可以更加清晰）：<br></p>
+<p>[图片]<br></p>
+<p>核心的代码就在红框的位置，其中的 res 大家可以理解为<code>target[property]</code>。<br></p>
+<p>而根据<strong>01：Reactive 的实现原理</strong>我们知道<code>reactive</code>方法本质上就是生成了一个 Proxy 实例。所以说，这里的代码核心其实就是<strong>一旦获取到的属性是对象，则会为该对象再次执行</strong><code>reactive</code><strong>方法</strong><br></p>
+<p>如果用伪代码表示，就是下面这样：<br></p>
+<p>[图片]<br></p>
+<p>即：<strong>再次通过 Proxy 完成代理，并返回</strong><br></p>
+<p>所以说，所谓的 Reactive的懒响应性 指的就是：<strong>Reactive 最初只会为复杂数据类型执行第一层的响应性。如果存在多层的复杂数据类型嵌套时，则会在使用到（getter 行为）该子集时，才会再次为该子集包装 proxy（执行 reactive 方法）</strong><br></p>
+<p><br></p>
+<p>11 人点赞</p></article>
+</body>
+</html>
