@@ -6,10 +6,6 @@ entries:
     target: "AI Agent相关/AI基础认知/AI 新技术与 Agent 生态思维导图"
     mode: html
 
-  - source: "AI Agent相关/AI基础认知/solution.html"
-    target: "AI Agent相关/AI基础认知/AI 基础认知"
-    mode: html
-
   - source: "AI Agent相关/AI基础认知/1.【简单】简述以下名词,概念的理解：MCP、A2A、Claude Code、Codex、Manus、AutoGLM、豆包手机、Coworrk、OpenClaw、Vibe Coding、Skills、WorkFlow.png"
     target: "AI Agent相关/AI基础认知/1.【简单】简述以下名词,概念的理解：MCP、A2A、Claude Code、Codex、Manus、AutoGLM、豆包手机、Coworrk、OpenClaw、Vibe Coding、Skills、WorkFlow.png"
     mode: image
